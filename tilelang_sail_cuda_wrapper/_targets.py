@@ -59,14 +59,28 @@ def _map_cuda_arch_to_ppu(arch):
 def _detect_device_ppu_arch():
     """PPU arch detected from the device, mirroring tilelang's own logic.
 
-    Reuses ``tilelang.utils.target._detect_torch_ppu_arch`` when it is
-    already loaded: in practice its output matches what ``determine_target``
-    resolves for a 'ppu' target, so direct construction and the compile
-    entry agree on the arch.  Returns None when detection is unavailable
-    (no device, or constructed before tilelang finished importing); the
-    caller then falls back to the static ppu_10 default.
+    tilelang moved its detection helpers between versions: >= 0.1.12
+    exposes ``tilelang.ppu.target._detect_ppu_arch`` (the helper the ppu
+    target normalizer itself uses, loaded as part of ``import tilelang``),
+    while <= 0.1.11 exposed
+    ``tilelang.utils.target._detect_torch_ppu_arch``.  Try whichever module
+    is already loaded, then fall back to querying hgcc directly.  In
+    practice the output matches what ``determine_target`` resolves for a
+    'ppu' target, so direct construction and the compile entry agree on
+    the arch.  Returns None when detection is unavailable (no device, or
+    constructed before tilelang finished importing); the caller then falls
+    back to the static ppu_10 default.
     """
     try:
+        # tilelang >= 0.1.12.
+        ppu_target = sys.modules.get("tilelang.ppu.target")
+        if ppu_target is not None:
+            detect = getattr(ppu_target, "_detect_ppu_arch", None)
+            if detect is not None:
+                arch = detect()
+                if arch:
+                    return arch
+        # tilelang <= 0.1.11.
         utils_target = sys.modules.get("tilelang.utils.target")
         if utils_target is not None:
             detect = getattr(utils_target, "_detect_torch_ppu_arch", None)
@@ -200,20 +214,19 @@ def _extract_target_kind(result):
     return None
 
 
-def _patch_tilelang_utils_target():
-    """Wrap ``determine_target`` once, after tilelang.utils.target loads.
+def _apply_strict_determine_target(modname):
+    """Wrap the ``determine_target`` living in *modname* with strict validation.
 
-    In practice every target handed to jit/compile/autotune ends up here,
-    which makes this the single place to validate the user's target.
-    Strict mode: only 'cuda' (rewritten to ppu downstream) and 'ppu' are
-    accepted; anything else raises.  The host targets the engine constructs
-    on its own ('llvm'/'c') do not pass through here and stay functional.
+    Shared by the ``tilelang.utils.target`` (tilelang <= 0.1.11) and
+    ``tilelang.backend.target`` (>= 0.1.12) patch entries; the module that
+    exists in the running tilelang is the one that gets loaded and patched.
+    Returns the wrapped function, or None when there is nothing to do.
     """
-    utils_target = sys.modules["tilelang.utils.target"]
+    module = sys.modules[modname]
 
-    original = getattr(utils_target, "determine_target", None)
+    original = getattr(module, "determine_target", None)
     if original is None or getattr(original, "_tilelang_sail_cuda_wrapper_strict", False):
-        return
+        return None
 
     def determine_target_strict(target="auto", return_object=False):
         result = original(target, return_object)
@@ -227,9 +240,38 @@ def _patch_tilelang_utils_target():
     determine_target_strict.__qualname__ = original.__qualname__
     determine_target_strict.__doc__ = original.__doc__
     determine_target_strict.__wrapped__ = original  # type: ignore[attr-defined]
-    utils_target.determine_target = determine_target_strict
+    module.determine_target = determine_target_strict
+    return determine_target_strict
+
+
+def _patch_tilelang_utils_target():
+    """Wrap ``determine_target`` once, after tilelang.utils.target loads.
+
+    In practice every target handed to jit/compile/autotune ends up here
+    (tilelang <= 0.1.11 layout), which makes this the single place to
+    validate the user's target.  Strict mode: only 'cuda' (rewritten to ppu
+    downstream) and 'ppu' are accepted; anything else raises.  The host
+    targets the engine constructs on its own ('llvm'/'c') do not pass
+    through here and stay functional.
+    """
+    strict = _apply_strict_determine_target("tilelang.utils.target")
+    if strict is None:
+        return
 
     # tilelang.utils re-exports determine_target; keep both views in sync.
     utils_pkg = sys.modules.get("tilelang.utils")
-    if utils_pkg is not None and getattr(utils_pkg, "determine_target", None) is original:
-        utils_pkg.determine_target = determine_target_strict
+    if utils_pkg is not None and getattr(utils_pkg, "determine_target", None) is strict.__wrapped__:
+        utils_pkg.determine_target = strict
+
+
+def _patch_tilelang_backend_target():
+    """Wrap ``determine_target`` once, after tilelang.backend.target loads.
+
+    tilelang >= 0.1.12 moved the user-facing target entry from
+    tilelang.utils.target to tilelang.backend.target (registered
+    detectors/normalizers); every jit/compile/autotune target passes through
+    it, so the same strict validation applies here.  tilelang.backend itself
+    does not re-export determine_target from its ``__init__``, so patching
+    the module attribute is sufficient.
+    """
+    _apply_strict_determine_target("tilelang.backend.target")

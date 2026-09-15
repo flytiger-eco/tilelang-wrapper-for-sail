@@ -32,6 +32,37 @@ elif state == "wrapped":
 
     import tilelang as tl
 
+    # tilelang moved the user-facing target entry across versions: the
+    # determine_target helper lives in tilelang.utils.target (<= 0.1.11)
+    # and tilelang.backend.target (>= 0.1.12); the arch-detection helper
+    # in tilelang.utils.target._detect_torch_ppu_arch (<= 0.1.11) and
+    # tilelang.ppu.target._detect_ppu_arch (>= 0.1.12).  Only the modules
+    # the running tilelang ships with can be imported; probe both layouts.
+    import importlib
+
+    _entry_modules = []
+    for _modname in ("tilelang.utils.target", "tilelang.backend.target"):
+        try:
+            _entry_modules.append(importlib.import_module(_modname))
+        except ImportError:
+            pass
+    assert _entry_modules, "no tilelang target entry module found"
+
+    _detect_modules = _entry_modules[:]
+    try:
+        _detect_modules.append(importlib.import_module("tilelang.ppu.target"))
+    except ImportError:
+        pass
+
+    def _detect_ppu_arch():
+        for _mod in _detect_modules:
+            _detect = getattr(_mod, "_detect_torch_ppu_arch", None) or getattr(
+                _mod, "_detect_ppu_arch", None
+            )
+            if _detect is not None:
+                return _detect()
+        raise AssertionError("no ppu arch detection helper found")
+
     # 2. tilelang.cuda aliases tilelang.ppu
     import tilelang.cuda
     assert getattr(tilelang.cuda, "_tilelang_sail_cuda_wrapper_alias_of__", None) is not None, \
@@ -65,7 +96,7 @@ elif state == "wrapped":
         print("[wrapped] CUDA-only pass correctly rejected:", str(e)[:100])
 
     # 5. Target rewrite: cuda -> ppu
-    detected = tl.utils.target._detect_torch_ppu_arch()
+    detected = _detect_ppu_arch()
     t = tl.tvm.target.Target("cuda")
     assert t.kind.name == "ppu", f"Target('cuda') kind is {t.kind.name}, expected ppu"
     assert t.attrs.get("arch") == detected, \
@@ -96,21 +127,26 @@ elif state == "wrapped":
           f"bare cuda -> device arch ({detected}), no-device fallback -> ppu_10")
 
     # 6. Strict mode: non-ppu/cuda user targets rejected at determine_target
-    try:
-        tl.utils.target.determine_target("llvm")
-        print("[wrapped] FAIL: llvm target unexpectedly accepted")
-        sys.exit(1)
-    except ValueError as e:
-        print("[wrapped] strict mode OK:", str(e)[:110])
-    try:
-        tl.utils.target.determine_target("metal")
-        print("[wrapped] FAIL: metal target unexpectedly accepted")
-        sys.exit(1)
-    except ValueError as e:
-        print("[wrapped] strict mode OK (metal):", str(e)[:80])
-    # ppu target itself still fine
-    r = tl.utils.target.determine_target("ppu")
-    print("[wrapped] ppu target accepted:", r)
+    for _entry in _entry_modules:
+        _entry_name = _entry.__name__
+        assert getattr(_entry.determine_target, "_tilelang_sail_cuda_wrapper_strict", False), (
+            f"{_entry_name}.determine_target is not the strict wrapper"
+        )
+        try:
+            _entry.determine_target("llvm")
+            print(f"[wrapped] FAIL: llvm target unexpectedly accepted via {_entry_name}")
+            sys.exit(1)
+        except ValueError as e:
+            print(f"[wrapped] strict mode OK ({_entry_name}):", str(e)[:110])
+        try:
+            _entry.determine_target("metal")
+            print(f"[wrapped] FAIL: metal target unexpectedly accepted via {_entry_name}")
+            sys.exit(1)
+        except ValueError as e:
+            print(f"[wrapped] strict mode OK (metal, {_entry_name}):", str(e)[:80])
+        # ppu target itself still fine
+        r = _entry.determine_target("ppu")
+        print(f"[wrapped] ppu target accepted ({_entry_name}):", r)
 
     # 7. Internal host llvm target construction must NOT be blocked
     t_host = tl.tvm.target.Target("llvm")

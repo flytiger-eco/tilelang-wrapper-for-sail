@@ -69,7 +69,7 @@ print(kernel.target)            # PPU target（arch=ppu_10 / ppu_15，按设备�
 - **`.pth` 激活**：pip 安装后由 `site` 机制在每次解释器启动时执行 `import tilelang_sail_cuda_wrapper`，注册 finder。启动开销 O(1)，不加载 tilelang/tvm。
 - **运行时别名（PEP 562）**：`tilelang.cuda.*` 模块通过模块级 `__getattr__` **懒转发**到 `tilelang.ppu.*`，并在属性访问时做 CUDA 风格名映射（`TensorCoreIntrinEmitter → PPUTensorCoreIntrinEmitter` 等）。子模块属性同样转发为对应的 cuda 别名，不会泄漏原始 ppu 模块。
   - 为什么不用 `__dict__` 快照拷贝：`tilelang.ppu` 的加载链会反向 import `tilelang.cuda.*`（`intrinsics.macro` 下有模块引用 cuda 风格 layout），finder 会在 ppu 模块**尚未完成初始化**时被重入，快照会将该不完整状态固化于 `sys.modules`。懒转发不受影响——模块在原地填充，后续访问始终得到完整状态。
-- **加载后 patch**：`tvm.target` / `tilelang.transform` / `tilelang.utils.target` 的真实 loader 被包装，模块加载完成后立即打 patch（Target 重写、pass 路由、严格模式）。
+- **加载后 patch**：`tvm.target` / `tilelang.transform` / `tilelang` 目标入口模块的真实 loader 被包装，模块加载完成后立即打 patch（Target 重写、pass 路由、严格模式）。目标入口模块随 tilelang 版本变化：0.1.11 为 `tilelang.utils.target`，0.1.12 为 `tilelang.backend.target`；finder 同时登记两个条目，实际运行时只会加载其中存在的一个，各版本各取所需、互不干扰。
 - **tvm 归属判定**：`tvm.target` 的 patch 只作用于 **tilelang 自带的 vendored tvm**（`3rdparty/tvm/python`）。判定依据两级信号：优先从 `sys.modules["tilelang"].__file__` 推导 vendored 根（dev checkout 与 wheel 两种布局）比对 tvm 文件路径；tilelang 尚未加载时（此时只可能是用户先 import 了独立 tvm）退回路径签名（含 `3rdparty/tvm/python` 段）。独立安装的 tvm（如 `site-packages/tvm`）一律不做改动，其 `Target("cuda")` 原样透传。
 - **严格模式卡点在 `determine_target`**（实测 jit/compile/autotune 传入的 target 均汇聚于该入口），而非 `Target.__init__`：编译过程中引擎会自行构造 `Target("llvm")` 这类 host codegen target，必须放行。
 

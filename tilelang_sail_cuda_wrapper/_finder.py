@@ -29,17 +29,29 @@ import sys
 
 from ._aliases import _make_cuda_alias
 from ._passes import _patch_tilelang_transform
-from ._targets import _patch_tvm_target, _patch_tilelang_utils_target
+from ._targets import (
+    _patch_tvm_target,
+    _patch_tilelang_utils_target,
+    _patch_tilelang_backend_target,
+)
 
 _FINDER = None  # singleton, guarded by install()
 
 # Modules whose loaders we wrap so a patch runs right after they finish
-# loading.  Note: ``import tilelang`` already pulls in tilelang.transform
-# and tilelang.utils.target, so wrapping these covers the normal paths.
+# loading.  Note: ``import tilelang`` already pulls in tilelang.transform and
+# whichever target module the running tilelang ships with, so wrapping these
+# covers the normal paths.
+#
+# tilelang moved the user-facing target entry across versions: <= 0.1.11
+# exposes it as tilelang.utils.target.determine_target, >= 0.1.12 as
+# tilelang.backend.target.determine_target.  Only the module that actually
+# exists gets imported, so both entries can stay registered: on each
+# version exactly one loader is ever wrapped and the other entry is inert.
 _WRAP_LOAD_MODULES = {
     "tvm.target": _patch_tvm_target,
     "tilelang.transform": _patch_tilelang_transform,
     "tilelang.utils.target": _patch_tilelang_utils_target,
+    "tilelang.backend.target": _patch_tilelang_backend_target,
 }
 
 # Reentrancy guard: while a patch runs it may import modules; those imports
