@@ -161,4 +161,31 @@ elif state == "wrapped":
     print("[wrapped] common passes routed: LowerTileOp/LayoutInference ->",
           type(p).__name__)
 
+    # 9. tilelang.cuda.target predicates (layout differs per tilelang
+    #    version: >= 0.1.12 tiles ppu.target, <= 0.1.11 keeps the helpers
+    #    flat in utils.target; the wrapper forwards CUDA-style names onto
+    #    whichever exists).
+    import tilelang.cuda.target as cuda_target
+    from tilelang.cuda.target import (
+        target_is_cuda,
+        target_is_hopper,
+        target_has_async_copy,
+        check_cuda_availability,
+    )
+    t_ppu = tl.tvm.target.Target("ppu")
+    t_cuda_style = tl.tvm.target.Target("cuda")  # rewritten to ppu
+    assert target_is_cuda(t_ppu) is True, \
+        f"target_is_cuda(ppu) -> {target_is_cuda(t_ppu)}, expected True"
+    assert target_is_cuda(t_cuda_style) is True, \
+        f"target_is_cuda(cuda-style) -> {target_is_cuda(t_cuda_style)}, expected True"
+    assert target_is_hopper(t_ppu) is False, \
+        f"target_is_hopper(ppu) -> {target_is_hopper(t_ppu)}, expected False"
+    assert isinstance(target_has_async_copy(t_ppu), bool), \
+        "target_has_async_copy(ppu) did not return a bool"
+    assert check_cuda_availability() is True, \
+        f"check_cuda_availability() -> {check_cuda_availability()}, expected True on a PPU host"
+    print("[wrapped] tilelang.cuda.target predicates OK: target_is_cuda ->",
+          target_is_cuda.__name__, "| alias of:",
+          cuda_target._tilelang_sail_cuda_wrapper_alias_of__.__name__)
+
 print(f"=== state '{state}' verification done ===")
