@@ -55,6 +55,9 @@ print(kernel.target)            # PPU target（arch=ppu_10 / ppu_15，按设备�
 |---|---|---|
 | `import tilelang.cuda` | 原生包可导入，但调用其接口时触发原生错误 | 别名到 `tilelang.ppu`，CUDA 风格名可用 |
 | `from tilelang.cuda.intrinsics import TensorCoreIntrinEmitter` | ImportError / 原生实现 | 转发到 `PPUTensorCoreIntrinEmitter` |
+| `from tilelang.cuda.intrinsics.macro.mma_macro_generator import TensorCoreIntrinEmitter`（模块级路径，`tilelang.intrinsics` 门面亦走此路径） | 原生类 | 转发到 PPU 版（与包级入口解析到同一个类） |
+| ppu 未提供的 `tilelang.cuda` 子模块（`wgmma_macro_generator`、`tcgen05_macro_generator`、`mma_sm70/sm75_*` 等代际专有生成器） | 原生模块 | **原生加载**（不拦截，行为同未安装 wrapper） |
+| `TensorCoreIntrinEmitterWithLadderTransform`（ladder transform 布局插件，PPU 侧无对应实现） | 原生类 | **显式报错**（名字可解析，实例化/调用时 RuntimeError；保证 `tilelang.intrinsics` 门面可加载） |
 | `tilelang.cuda.transform.MarkCudaSyncCalls` | 原生实现 | 转发到 `MarkPpuSyncCalls` |
 | CUDA-only pass（`LowerBlackwell2SM`、`InjectTcgen05Fence` 等） | 原生实现 | **显式报错**（无 PPU 对应实现） |
 | `target="cuda"`（jit/compile/autotune） | 编译报错 | 重写为 ppu；arch 未指定时由**设备探测**决定（实测与 determine_target 解析 ppu target 的结果一致，ppu_10 / ppu_15 按硬件代次），探测不可用则默认 **ppu_10**——对齐 TVM 对 CUDA 无设备时默认 sm_50 的做法；显式 arch 仅验证了 sm_80→ppu_10、sm_89→ppu_15，其余 **ValueError**（不做猜测映射） |
@@ -65,7 +68,7 @@ print(kernel.target)            # PPU target（arch=ppu_10 / ppu_15，按设备�
 
 ## 工作原理
 
-- **`sys.meta_path` finder（PEP 302/451）**：被动应答解释器的 import 请求，无 watcher、无线程、无轮询。插在 meta_path 最前端，先于原生 `tilelang/cuda` 目录命中。
+- **`sys.meta_path` finder（PEP 302/451）**：被动应答解释器的 import 请求，无 watcher、无线程、无轮询。插在 meta_path 最前端，先于原生 `tilelang/cuda` 目录命中；仅拦截 **ppu 后端实际提供**的 `tilelang.cuda.*` 子模块，ppu 未提供者（wgmma/tcgen05 等代际专有生成器）放行原生文件，行为与未安装 wrapper 时一致。
 - **`.pth` 激活**：pip 安装后由 `site` 机制在每次解释器启动时执行 `import tilelang_sail_cuda_wrapper`，注册 finder。启动开销 O(1)，不加载 tilelang/tvm。
 - **运行时别名（PEP 562）**：`tilelang.cuda.*` 模块通过模块级 `__getattr__` **懒转发**到 `tilelang.ppu.*`，并在属性访问时做 CUDA 风格名映射（`TensorCoreIntrinEmitter → PPUTensorCoreIntrinEmitter` 等）。子模块属性同样转发为对应的 cuda 别名，不会泄漏原始 ppu 模块。
   - 为什么不用 `__dict__` 快照拷贝：`tilelang.ppu` 的加载链会反向 import `tilelang.cuda.*`（`intrinsics.macro` 下有模块引用 cuda 风格 layout），finder 会在 ppu 模块**尚未完成初始化**时被重入，快照会将该不完整状态固化于 `sys.modules`。懒转发不受影响——模块在原地填充，后续访问始终得到完整状态。
@@ -100,14 +103,14 @@ python3 tests/e2e_cuda_style.py          # 端到端：CUDA 风格 matmul 编译
 
 覆盖点：
 
-- **双状态对照**：alias 转发、CUDA-only pass 显式报错、target 重写、严格模式、pass 路由、tvm 归属判定、`tilelang.cuda.target` 谓词、`tilelang.testing` 的 CUDA gate（requires_cuda / requires_cuda_or_cdna 不再 skip）；
+- **双状态对照**：alias 转发、CUDA-only pass 显式报错、target 重写、严格模式、pass 路由、tvm 归属判定、`tilelang.cuda.target` 谓词、`tilelang.testing` 的 CUDA gate（requires_cuda / requires_cuda_or_cdna 不再 skip）、`tilelang.intrinsics` 门面（ladder transform 哨兵、wgmma/tcgen05 原生放行、模块级与包级 emitter 一致）；
 - **arch 规则**：设备探测（ppu_10 / ppu_15 按硬件代次）、sm_80 / sm_89 显式映射、其余 arch ValueError、无设备时回退至 ppu_10；
 - **端到端**：`target="cuda"` 的 matmul 经 PPU backend 编译（kernel target 为 ppu），数值与 torch 参考一致。
 
 ## 已知限制
 
 - **严格模式**：本 wrapper 仅覆盖“CUDA 风格代码 → PPU”这一场景，经 `determine_target` 的其他 target（llvm/metal/rocm…）明确报错——无法覆盖的场景立即说明，而非静默产生错误行为；编译过程中引擎内部构造的 host codegen target（如 `Target("llvm")`）放行，不受影响。
-- **CUDA-only 特性显式报错**：10 个未找到 PPU 对应实现的 pass（Blackwell / Hopper 专有等）会抛出明确的 RuntimeError，而非静默降级或难以排查的 AttributeError。
+- **CUDA-only 特性显式报错**：10 个未找到 PPU 对应实现的 pass（Blackwell / Hopper 专有等）与 `TensorCoreIntrinEmitterWithLadderTransform`（ladder transform 布局插件）会抛出明确的 RuntimeError，而非静默降级或难以排查的 AttributeError；名字本身仍可 import（tilelang 自身的门面 re-export 依赖这一点），实际使用时才报错。
 - **arch 映射仅覆盖两个档位**：sm_80→ppu_10、sm_89→ppu_15，其余显式 arch 一律 ValueError。
 - **安装/卸载后需重启 Python 进程**：`.pth` 仅在解释器启动时执行。
 - tilelang-sail 升级后建议重新运行 `tests/` 下的验证脚本——wrapper 不修改其源码，但其内部行为可能随版本变化；如发现行为漂移或新的不兼容写法，欢迎提交 issue。

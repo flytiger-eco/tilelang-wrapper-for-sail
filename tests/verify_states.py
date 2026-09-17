@@ -220,4 +220,31 @@ elif state == "wrapped":
     print("[wrapped] tilelang.testing gates OK: requires_cuda accepts the PPU,",
           "target_is_cuda binding is", getattr(_testing_pred, "__name__", None))
 
+    # 11. tilelang.intrinsics facade: every re-exported name must resolve.
+    #     The ppu macro generator ships no ladder-transform emitter and no
+    #     wgmma/tcgen05 modules; the former is an explicit error stub, the
+    #     latter fall through to their native tilelang.cuda files.
+    import tilelang.intrinsics
+    _ladder = tilelang.intrinsics.TensorCoreIntrinEmitterWithLadderTransform
+    assert callable(_ladder), "LadderTransform stub not resolvable"
+    try:
+        _ladder(a_dtype="float16", b_dtype="float16", accum_dtype="float16")
+        print("[wrapped] FAIL: LadderTransform unexpectedly usable")
+        sys.exit(1)
+    except RuntimeError as e:
+        print("[wrapped] LadderTransform stub rejects use:", str(e)[:90])
+    import tilelang.cuda.intrinsics.macro.wgmma_macro_generator as _wgmma
+    import tilelang.cuda.intrinsics.macro.tcgen05_macro_generator as _tcgen05
+    assert hasattr(_wgmma, "WGMMADescriptorParams"), "native wgmma re-exports missing"
+    assert hasattr(_tcgen05, "TCGEN05DescriptorParams"), "native tcgen05 re-exports missing"
+    assert tilelang.intrinsics.WGMMATensorCoreIntrinEmitter is _wgmma.TensorCoreIntrinEmitter, \
+        "facade wgmma re-export differs from the native module"
+    assert tilelang.intrinsics.TCGEN05TensorCoreIntrinEmitter is _tcgen05.TensorCoreIntrinEmitter, \
+        "facade tcgen05 re-export differs from the native module"
+    from tilelang.cuda.intrinsics.macro.mma_macro_generator import TensorCoreIntrinEmitter as _mod_tc
+    assert _mod_tc is tilelang.cuda.intrinsics.TensorCoreIntrinEmitter, \
+        "module-level and package-level emitter resolve to different classes"
+    print("[wrapped] tilelang.intrinsics facade OK: ladder stub, native wgmma/tcgen05",
+          "passthrough, module/package emitter agreement")
+
 print(f"=== state '{state}' verification done ===")

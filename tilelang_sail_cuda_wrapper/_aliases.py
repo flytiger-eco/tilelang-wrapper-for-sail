@@ -10,6 +10,7 @@ stubs.
 from __future__ import annotations
 
 import importlib
+import os
 import sys
 import types
 
@@ -22,6 +23,16 @@ _ALIASES = {
     },
     "intrinsics.macro": {
         "TensorCoreIntrinEmitter": "PPUTensorCoreIntrinEmitter",
+        "SparseTensorCoreIntrinEmitter": "PPUSparseTensorCoreIntrinEmitter",
+    },
+    # Module-level paths: tilelang's top-level facade (tilelang.intrinsics)
+    # re-exports from the concrete module files, not the packages, so the
+    # same mapping must exist there for both entry points to resolve to
+    # the same class.
+    "intrinsics.macro.mma_macro_generator": {
+        "TensorCoreIntrinEmitter": "PPUTensorCoreIntrinEmitter",
+    },
+    "intrinsics.macro.mma_sp_macro_generator": {
         "SparseTensorCoreIntrinEmitter": "PPUSparseTensorCoreIntrinEmitter",
     },
     "transform": {
@@ -67,19 +78,37 @@ _FFI_TARGET_PREDICATES = {
     "target_has_bulk_copy": "TargetHasBulkCopy",
 }
 
-# CUDA-only transform APIs with no PPU counterpart found: expose explicit
-# errors instead of letting users hit an obscure AttributeError.
-_UNSUPPORTED_TRANSFORM = {
-    "LowerBlackwell2SM": "Blackwell 2SM lowering",
-    "LowerHopperIntrin": "Hopper intrinsics lowering",
-    "LowerSharedTmem": "shared TMEM lowering",
-    "LowerSharedBarrier": "shared barrier lowering (PTX mbarrier)",
-    "FuseMBarrierArriveExpectTx": "TMA mbarrier fusing",
-    "InjectFenceProxy": "fence.proxy injection",
-    "InjectTcgen05Fence": "tcgen05 fence injection",
-    "AnnotateWarpGroupRegAlloc": "warp-group register allocation",
-    "ProducerConsumerWarpSpecialized": "warp specialization",
-    "ProducerConsumerWarpSpecializedTiled": "warp specialization",
+# CUDA-only APIs with no PPU counterpart found, keyed by the submodule
+# path relative to the backend package: exposed as explicit error stubs
+# instead of letting users hit an obscure AttributeError -- or, for the
+# from-import forms tilelang's own re-exports rely on, a bogus
+# ModuleNotFoundError that treats the class name as a missing submodule.
+_UNSUPPORTED = {
+    "transform": {
+        "LowerBlackwell2SM": "Blackwell 2SM lowering",
+        "LowerHopperIntrin": "Hopper intrinsics lowering",
+        "LowerSharedTmem": "shared TMEM lowering",
+        "LowerSharedBarrier": "shared barrier lowering (PTX mbarrier)",
+        "FuseMBarrierArriveExpectTx": "TMA mbarrier fusing",
+        "InjectFenceProxy": "fence.proxy injection",
+        "InjectTcgen05Fence": "tcgen05 fence injection",
+        "AnnotateWarpGroupRegAlloc": "warp-group register allocation",
+        "ProducerConsumerWarpSpecialized": "warp specialization",
+        "ProducerConsumerWarpSpecializedTiled": "warp specialization",
+    },
+    # The ladder-transform emitter is a CUDA layout plugin (tied to the
+    # ladder/swizzle machinery); the PPU macro generator never grew one.
+    # Stubbed at every level tilelang re-exports it from, so the
+    # tilelang.intrinsics facade can still load.
+    "intrinsics": {
+        "TensorCoreIntrinEmitterWithLadderTransform": "ladder-transform layout plugin for MMA macros",
+    },
+    "intrinsics.macro": {
+        "TensorCoreIntrinEmitterWithLadderTransform": "ladder-transform layout plugin for MMA macros",
+    },
+    "intrinsics.macro.mma_macro_generator": {
+        "TensorCoreIntrinEmitterWithLadderTransform": "ladder-transform layout plugin for MMA macros",
+    },
 }
 
 
@@ -93,6 +122,25 @@ def _make_unsupported(name: str, feature: str):
     _raise.__name__ = name
     _raise.__qualname__ = name
     return _raise
+
+
+def _native_cuda_dir(rel: str):
+    """Directory of the native ``tilelang/cuda`` counterpart of *rel*.
+
+    Submodules the ppu backend does not ship (wgmma/tcgen05/... generation-
+    specific macro generators) are served by their native files -- see
+    ``_finder``, which lets those imports fall through.  Their resolution
+    goes through the parent alias package's ``__path__``, so the native
+    cuda directories must be on it.  Returns None when no such directory
+    exists (e.g. a module, not a package, or an exotic install).
+    """
+    tilelang_pkg = sys.modules.get("tilelang")
+    pkg_file = getattr(tilelang_pkg, "__file__", None)
+    if not pkg_file:
+        return None
+    parts = ("cuda",) + tuple(p for p in rel.split(".") if p)
+    native = os.path.join(os.path.dirname(pkg_file), *parts)
+    return native if os.path.isdir(native) else None
 
 
 def _make_cuda_target_alias(fullname: str, spec=None) -> types.ModuleType:
@@ -203,9 +251,15 @@ def _make_cuda_alias(fullname: str, spec=None) -> types.ModuleType:
     name_map = _ALIASES.get(rel, {})
 
     alias = types.ModuleType(fullname)
-    # Let submodule imports (tilelang.cuda.intrinsics.macro, ...) resolve via
-    # the real ppu package paths if anything bypasses our finder.
-    alias.__path__ = getattr(ppu_mod, "__path__", None)  # type: ignore[attr-defined]
+    # Search paths for submodule resolution: the ppu package paths first,
+    # then the native cuda directory for submodules the ppu backend does
+    # not ship -- those fall through find_spec to their native files and
+    # must stay reachable through the parent alias package.
+    paths = list(getattr(ppu_mod, "__path__", None) or [])
+    native = _native_cuda_dir(rel)
+    if native is not None and native not in paths:
+        paths.append(native)
+    alias.__path__ = paths or None  # type: ignore[attr-defined]
     alias.__file__ = getattr(ppu_mod, "__file__", None)
     alias.__package__ = fullname
     # Mark for introspection and keep a handle to the underlying module.
@@ -225,8 +279,9 @@ def _make_cuda_alias(fullname: str, spec=None) -> types.ModuleType:
                     f"(PPU implementation {ppu_name!r} not found)"
                 ) from None
         # 2. CUDA-only APIs without a PPU counterpart: explicit error stubs.
-        if rel == "transform" and name in _UNSUPPORTED_TRANSFORM:
-            return _make_unsupported(name, _UNSUPPORTED_TRANSFORM[name])
+        unsupported = _UNSUPPORTED.get(rel, {})
+        if name in unsupported:
+            return _make_unsupported(name, unsupported[name])
         # 3. Plain attribute forwarding.
         try:
             value = getattr(ppu_mod, name)
@@ -246,9 +301,7 @@ def _make_cuda_alias(fullname: str, spec=None) -> types.ModuleType:
         return value
 
     def _dir():
-        names = set(dir(ppu_mod)) | set(name_map)
-        if rel == "transform":
-            names |= set(_UNSUPPORTED_TRANSFORM)
+        names = set(dir(ppu_mod)) | set(name_map) | set(_UNSUPPORTED.get(rel, {}))
         return sorted(names)
 
     alias.__dict__["__getattr__"] = _forward

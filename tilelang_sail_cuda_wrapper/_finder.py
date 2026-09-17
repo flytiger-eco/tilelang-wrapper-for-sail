@@ -27,6 +27,7 @@ from __future__ import annotations
 import importlib
 import importlib.abc
 import importlib.machinery
+import importlib.util
 import sys
 
 from ._aliases import _make_cuda_alias
@@ -64,6 +65,14 @@ _WRAP_LOAD_MODULES = {
 # Reentrancy guard: while a patch runs it may import modules; those imports
 # must not be intercepted again.
 _patch_in_progress: dict[str, bool] = {}
+
+# Submodules served by dedicated cross-version builders whose backing
+# module moves between tilelang versions (tilelang.cuda.target lives in
+# tilelang.ppu.target on >= 0.1.12 but tilelang.utils.target on <= 0.1.11,
+# and the native module does not exist at all on the latter): a simple
+# ppu-existence probe cannot decide these, so they are always intercepted
+# and the builder picks the right base.
+_SPECIAL_ALIAS_MODULES = {"tilelang.cuda.target"}
 
 
 def _delegated_find_spec(finder_self, fullname, path):
@@ -120,10 +129,24 @@ class _CudaPpuFinder(importlib.abc.MetaPathFinder):
     """Intercepts ``tilelang.cuda.*`` and wraps loaders of patch targets."""
 
     def find_spec(self, fullname, path=None, target=None):
-        # 1. Alias every tilelang.cuda.* submodule onto tilelang.ppu.*.
+        # 1. Alias every tilelang.cuda.* submodule onto tilelang.ppu.* --
+        #    but only those the ppu backend actually ships. Submodules it
+        #    does not (the wgmma/tcgen05 generation-specific macro
+        #    generators, the older sm70/sm75 variants, ...) fall through
+        #    to their native tilelang.cuda files: the exact behavior of a
+        #    wrapper-less environment, and what tilelang's own top-level
+        #    re-exports (tilelang.intrinsics) expect to load.
         if fullname == "tilelang.cuda" or fullname.startswith("tilelang.cuda."):
             if _patch_in_progress.get(fullname):
                 return None
+            if fullname != "tilelang.cuda" and fullname not in _SPECIAL_ALIAS_MODULES:
+                ppu_fullname = "tilelang.ppu" + fullname[len("tilelang.cuda"):]
+                try:
+                    ppu_spec = importlib.util.find_spec(ppu_fullname)
+                except (ImportError, AttributeError, ValueError):
+                    ppu_spec = None
+                if ppu_spec is None:
+                    return None
             return importlib.machinery.ModuleSpec(fullname, _AliasLoader(fullname))
 
         # 2. Wrap loaders so patches run right after these modules load.
