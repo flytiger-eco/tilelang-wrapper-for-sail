@@ -11,6 +11,8 @@ The implementation is split by responsibility:
   ``tilelang.ppu.*`` (name mapping, PEP 562 lazy forwarding).
 * ``_targets``   -- target semantics: CUDA->PPU rewriting, arch mapping,
   and strict validation of user-facing targets.
+* ``_testing``   -- widens tilelang.testing's CUDA test gates so
+  CUDA-styled tests run (instead of skipping) on the PPU.
 * ``_passes``    -- routing of common transform passes to PPU-specific ones.
 * ``_tvm_ownership`` -- whether a loaded ``tvm`` is tilelang's vendored
   copy (only that one may be patched).
@@ -34,6 +36,7 @@ from ._targets import (
     _patch_tilelang_utils_target,
     _patch_tilelang_backend_target,
 )
+from ._testing import _patch_tilelang_testing
 
 _FINDER = None  # singleton, guarded by install()
 
@@ -47,11 +50,15 @@ _FINDER = None  # singleton, guarded by install()
 # tilelang.backend.target.determine_target.  Only the module that actually
 # exists gets imported, so both entries can stay registered: on each
 # version exactly one loader is ever wrapped and the other entry is inert.
+# tilelang.testing is separate: it loads when user tests import it (not as
+# part of ``import tilelang``), and its patch must run before those tests
+# use the requires_cuda gate.
 _WRAP_LOAD_MODULES = {
     "tvm.target": _patch_tvm_target,
     "tilelang.transform": _patch_tilelang_transform,
     "tilelang.utils.target": _patch_tilelang_utils_target,
     "tilelang.backend.target": _patch_tilelang_backend_target,
+    "tilelang.testing": _patch_tilelang_testing,
 }
 
 # Reentrancy guard: while a patch runs it may import modules; those imports

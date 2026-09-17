@@ -69,7 +69,7 @@ print(kernel.target)            # PPU target（arch=ppu_10 / ppu_15，按设备�
 - **`.pth` 激活**：pip 安装后由 `site` 机制在每次解释器启动时执行 `import tilelang_sail_cuda_wrapper`，注册 finder。启动开销 O(1)，不加载 tilelang/tvm。
 - **运行时别名（PEP 562）**：`tilelang.cuda.*` 模块通过模块级 `__getattr__` **懒转发**到 `tilelang.ppu.*`，并在属性访问时做 CUDA 风格名映射（`TensorCoreIntrinEmitter → PPUTensorCoreIntrinEmitter` 等）。子模块属性同样转发为对应的 cuda 别名，不会泄漏原始 ppu 模块。
   - 为什么不用 `__dict__` 快照拷贝：`tilelang.ppu` 的加载链会反向 import `tilelang.cuda.*`（`intrinsics.macro` 下有模块引用 cuda 风格 layout），finder 会在 ppu 模块**尚未完成初始化**时被重入，快照会将该不完整状态固化于 `sys.modules`。懒转发不受影响——模块在原地填充，后续访问始终得到完整状态。
-- **加载后 patch**：`tvm.target` / `tilelang.transform` / `tilelang` 目标入口模块的真实 loader 被包装，模块加载完成后立即打 patch（Target 重写、pass 路由、严格模式）。目标入口模块随 tilelang 版本变化：0.1.11 为 `tilelang.utils.target`，0.1.12 为 `tilelang.backend.target`；finder 同时登记两个条目，实际运行时只会加载其中存在的一个，各版本各取所需、互不干扰。
+- **加载后 patch**：`tvm.target` / `tilelang.transform` / `tilelang` 目标入口模块 / `tilelang.testing` 的真实 loader 被包装，模块加载完成后立即打 patch（Target 重写、pass 路由、严格模式、测试 gate 放宽）。目标入口模块随 tilelang 版本变化：0.1.11 为 `tilelang.utils.target`，0.1.12 为 `tilelang.backend.target`；finder 同时登记两个条目，实际运行时只会加载其中存在的一个，各版本各取所需、互不干扰。`tilelang.testing` 在用户测试代码 `import tilelang.testing` 时才加载，其 patch 将 `requires_cuda`（原生来自 tvm `Feature`，检查 `tvm.runtime.enabled("cuda")`，PPU-only 构建上恒为 False → 全部 skip）放宽为“CUDA 或 PPU 可用即不 skip”——与 tilelang 官方对 ROCm 的 `requires_cuda_or_cdna` 放宽方式同源；≤0.1.11 的 `requires_cuda_or_cdna` 也因原生 `target_is_cuda` 绑定被重定向到 ppu 判定而一并修复。
 - **tvm 归属判定**：`tvm.target` 的 patch 只作用于 **tilelang 自带的 vendored tvm**（`3rdparty/tvm/python`）。判定依据两级信号：优先从 `sys.modules["tilelang"].__file__` 推导 vendored 根（dev checkout 与 wheel 两种布局）比对 tvm 文件路径；tilelang 尚未加载时（此时只可能是用户先 import 了独立 tvm）退回路径签名（含 `3rdparty/tvm/python` 段）。独立安装的 tvm（如 `site-packages/tvm`）一律不做改动，其 `Target("cuda")` 原样透传。
 - **严格模式卡点在 `determine_target`**（实测 jit/compile/autotune 传入的 target 均汇聚于该入口），而非 `Target.__init__`：编译过程中引擎会自行构造 `Target("llvm")` 这类 host codegen target，必须放行。
 
@@ -81,11 +81,12 @@ tilelang_sail_cuda_wrapper/
 ├── _finder.py         # import 拦截骨架：meta_path finder、两个 loader、install()
 ├── _aliases.py        # tilelang.cuda.* 别名模块合成、CUDA→PPU 名字映射、懒转发
 ├── _targets.py        # Target 重写（arch 映射 / 设备探测）与严格模式校验
+├── _testing.py        # tilelang.testing 的 CUDA gate 放宽（requires_cuda 接受 PPU）
 ├── _passes.py         # common pass → PPU 专用 pass 的路由
 └── _tvm_ownership.py  # tvm 归属判定：只 patch tilelang 自带的 vendored tvm
 ```
 
-实现按职责拆成 5 个模块，各司其职：`_finder.py` 只保留 import 协议的骨架（finder / loader / `install()`），别名合成、target 语义、pass 路由、归属判定分别在对应模块。验证脚本在 `tests/` 下，不随包分发。
+实现按职责拆成 6 个模块，各司其职：`_finder.py` 只保留 import 协议的骨架（finder / loader / `install()`），别名合成、target 语义、测试 gate、pass 路由、归属判定分别在对应模块。验证脚本在 `tests/` 下，不随包分发。
 
 ## 验证
 
@@ -99,7 +100,7 @@ python3 tests/e2e_cuda_style.py          # 端到端：CUDA 风格 matmul 编译
 
 覆盖点：
 
-- **双状态对照**：alias 转发、CUDA-only pass 显式报错、target 重写、严格模式、pass 路由、tvm 归属判定；
+- **双状态对照**：alias 转发、CUDA-only pass 显式报错、target 重写、严格模式、pass 路由、tvm 归属判定、`tilelang.cuda.target` 谓词、`tilelang.testing` 的 CUDA gate（requires_cuda / requires_cuda_or_cdna 不再 skip）；
 - **arch 规则**：设备探测（ppu_10 / ppu_15 按硬件代次）、sm_80 / sm_89 显式映射、其余 arch ValueError、无设备时回退至 ppu_10；
 - **端到端**：`target="cuda"` 的 matmul 经 PPU backend 编译（kernel target 为 ppu），数值与 torch 参考一致。
 

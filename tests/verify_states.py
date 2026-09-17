@@ -188,4 +188,36 @@ elif state == "wrapped":
           target_is_cuda.__name__, "| alias of:",
           cuda_target._tilelang_sail_cuda_wrapper_alias_of__.__name__)
 
+    # 10. tilelang.testing gates: CUDA-styled tests must not skip on the
+    #     PPU (native requires_cuda checks tvm.runtime.enabled("cuda"),
+    #     False on a PPU-only build).
+    import tilelang.testing
+    assert getattr(tilelang.testing, "_tilelang_sail_cuda_wrapper_testing", False), \
+        "tilelang.testing was not patched"
+    assert tilelang.testing.requires_cuda.marks() == [], \
+        "requires_cuda marks should be empty on an available PPU"
+
+    @tilelang.testing.requires_cuda
+    def _gate_bare():
+        return 1
+
+    @tilelang.testing.requires_cuda(support_required="optional")
+    def _gate_optional():
+        return 2
+
+    assert callable(_gate_bare) and callable(_gate_optional), \
+        "requires_cuda failed to decorate (bare and/or keyword form)"
+    _cuda_or_cdna = getattr(tilelang.testing, "_check_is_cuda_or_cdna", None)
+    if _cuda_or_cdna is not None:
+        assert _cuda_or_cdna() is True, \
+            "requires_cuda_or_cdna gate still closed on the PPU"
+
+    # requires_cuda_compute_version inherits this gate via marks(); make
+    # sure that internal path still works with the patched object.
+    assert callable(tilelang.testing.requires_cuda_compute_version_ge(0, 0)), \
+        "requires_cuda_compute_version_ge failed to decorate"
+    _testing_pred = getattr(tilelang.testing, "target_is_cuda", None)
+    print("[wrapped] tilelang.testing gates OK: requires_cuda accepts the PPU,",
+          "target_is_cuda binding is", getattr(_testing_pred, "__name__", None))
+
 print(f"=== state '{state}' verification done ===")
