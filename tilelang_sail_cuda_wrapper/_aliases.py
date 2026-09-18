@@ -35,6 +35,15 @@ _ALIASES = {
     "intrinsics.macro.mma_sp_macro_generator": {
         "SparseTensorCoreIntrinEmitter": "PPUSparseTensorCoreIntrinEmitter",
     },
+    # The generic (generation-less) GEMM op implementation: same story as
+    # the intrinsics emitters -- the ppu counterpart exists under a PPU
+    # name.  The generation-specific files (gemm_mma_sm70/sm75, tcgen05,
+    # wgmma, ...) have no ppu counterpart at all and are served natively
+    # (see _finder); gemm_sp_mma happens to use identical class names on
+    # both backends and needs no mapping.
+    "op.gemm.gemm_mma": {
+        "GemmMMA": "PPUGemmMMA",
+    },
     "transform": {
         "MarkCudaSyncCalls": "MarkPpuSyncCalls",
     },

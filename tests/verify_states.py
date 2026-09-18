@@ -247,4 +247,20 @@ elif state == "wrapped":
     print("[wrapped] tilelang.intrinsics facade OK: ladder stub, native wgmma/tcgen05",
           "passthrough, module/package emitter agreement")
 
+    # 12. op layer: the generic GEMM op class maps to its PPU counterpart
+    #     (the generation-specific sm70/sm75 files stay native), and the
+    #     natively-loaded sm75 subclass still resolves its GemmMMA import
+    #     through the alias.
+    from tilelang.cuda.op.gemm.gemm_mma import GemmMMA as _mod_gemm
+    from tilelang.ppu.op.gemm.gemm_mma import PPUGemmMMA as _ppu_gemm
+    assert _mod_gemm is _ppu_gemm, \
+        "module-level GemmMMA does not resolve to the PPU implementation"
+    import tilelang.cuda.op.gemm.gemm_mma_sm75 as _sm75
+    from tilelang.cuda.op.gemm.gemm_mma_sm75 import GemmMMASm75
+    assert "mma_sm75" in _sm75.__file__, "sm75 module unexpectedly aliased"
+    assert _ppu_gemm in GemmMMASm75.__bases__, \
+        "native sm75 subclass did not resolve GemmMMA through the alias"
+    print("[wrapped] op layer OK: GemmMMA -> PPUGemmMMA, native sm75 subclass",
+          "imports through the alias")
+
 print(f"=== state '{state}' verification done ===")
