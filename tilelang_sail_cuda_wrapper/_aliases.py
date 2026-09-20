@@ -44,6 +44,15 @@ _ALIASES = {
     "op.gemm.gemm_mma": {
         "GemmMMA": "PPUGemmMMA",
     },
+    # The lowering pipeline bodies.  Nothing inside tilelang imports
+    # these names directly (the dispatch goes through the pipeline
+    # registry by target kind); this mapping serves user code that
+    # does -- the ppu counterparts live under PPU names.
+    "pipeline": {
+        "CUDAPassPipelineBody": "PPUPassPipelineBody",
+        "CUDAPassPipelineBodyPrologue": "PPUPassPipelineBodyPrologue",
+        "cuda_pipeline": "ppu_pipeline",
+    },
     "transform": {
         "MarkCudaSyncCalls": "MarkPpuSyncCalls",
     },
@@ -117,6 +126,13 @@ _UNSUPPORTED = {
     },
     "intrinsics.macro.mma_macro_generator": {
         "TensorCoreIntrinEmitterWithLadderTransform": "ladder-transform layout plugin for MMA macros",
+    },
+    # CUDA-only pipeline gates: warp specialization and TMA are Hopper
+    # concepts the ppu pipeline has no notion of (its body carries its
+    # own, different, gating logic).
+    "pipeline": {
+        "allow_warp_specialized": "warp-specialization gating",
+        "module_has_tma": "TMA detection",
     },
 }
 

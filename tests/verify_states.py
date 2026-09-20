@@ -263,4 +263,27 @@ elif state == "wrapped":
     print("[wrapped] op layer OK: GemmMMA -> PPUGemmMMA, native sm75 subclass",
           "imports through the alias")
 
+    # 13. pipeline layer: CUDA pipeline body names map onto the ppu
+    #     pipeline; the Hopper-only gates (warp specialization, TMA) are
+    #     explicit error stubs.
+    from tilelang.cuda.pipeline import (
+        CUDAPassPipelineBody as _cuda_body,
+        CUDAPassPipelineBodyPrologue as _cuda_prologue,
+    )
+    from tilelang.ppu.pipeline import (
+        PPUPassPipelineBody as _ppu_body,
+        PPUPassPipelineBodyPrologue as _ppu_prologue,
+    )
+    assert _cuda_body is _ppu_body and _cuda_prologue is _ppu_prologue, \
+        "CUDA pipeline bodies do not resolve to the PPU implementations"
+    import tilelang.cuda.pipeline as _cuda_pipe
+    try:
+        _cuda_pipe.allow_warp_specialized()
+        print("[wrapped] FAIL: warp-specialization gate unexpectedly usable")
+        sys.exit(1)
+    except RuntimeError as e:
+        print("[wrapped] pipeline gates OK:", str(e)[:80])
+    print("[wrapped] pipeline layer OK: CUDAPassPipelineBody(Prologue) ->",
+          "PPU counterparts")
+
 print(f"=== state '{state}' verification done ===")

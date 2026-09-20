@@ -59,6 +59,7 @@ print(kernel.target)            # PPU target（arch=ppu_10 / ppu_15，按设备�
 | ppu 未提供的 `tilelang.cuda` 子模块（`wgmma_macro_generator`、`tcgen05_macro_generator`、`mma_sm70/sm75_*` 等代际专有生成器） | 原生模块 | **原生加载**（不拦截，行为同未安装 wrapper） |
 | `TensorCoreIntrinEmitterWithLadderTransform`（ladder transform 布局插件，PPU 侧无对应实现） | 原生类 | **显式报错**（名字可解析，实例化/调用时 RuntimeError；保证 `tilelang.intrinsics` 门面可加载） |
 | `from tilelang.cuda.op.gemm.gemm_mma import GemmMMA`（通用 mma GEMM op 实现） | 原生类 | 转发到 `PPUGemmMMA`；代际专有文件（`gemm_mma_sm70/sm75`、`tcgen05`、`wgmma` 等）原生加载，行为同未安装 wrapper |
+| `from tilelang.cuda.pipeline import CUDAPassPipelineBody(Prologue)`（lowering pipeline 主体） | 原生函数 | 转发到 `PPUPassPipelineBody(Prologue)`；Hopper 专有门控（`allow_warp_specialized`、`module_has_tma`）显式报错 |
 | `tilelang.cuda.transform.MarkCudaSyncCalls` | 原生实现 | 转发到 `MarkPpuSyncCalls` |
 | CUDA-only pass（`LowerBlackwell2SM`、`InjectTcgen05Fence` 等） | 原生实现 | **显式报错**（无 PPU 对应实现） |
 | `target="cuda"`（jit/compile/autotune） | 编译报错 | 重写为 ppu；arch 未指定时由**设备探测**决定（实测与 determine_target 解析 ppu target 的结果一致，ppu_10 / ppu_15 按硬件代次），探测不可用则默认 **ppu_10**——对齐 TVM 对 CUDA 无设备时默认 sm_50 的做法；显式 arch 仅验证了 sm_80→ppu_10、sm_89→ppu_15，其余 **ValueError**（不做猜测映射） |
