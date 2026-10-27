@@ -1,118 +1,119 @@
 # tilelang-sail-cuda-wrapper
 
-使 CUDA 风格的 [TileLang](https://github.com/tile-ai/tilelang) 代码**无需修改一行**即可运行于 tilelang-sail（TileLang 的 PPU 后端版本）。
+Run CUDA-style [TileLang](https://github.com/tile-ai/tilelang) code on tilelang-sail (the PPU-backend distribution of TileLang) **without modifying a single line**.
 
-- **零改动迁移**：`import tilelang.cuda`、`from tilelang.cuda.intrinsics import ...`、`target="cuda"`、`tl.transform.LowerTileOp()` 等存量写法原样保留
-- **纯运行时方案**：pip 安装即生效、卸载即还原；不修改 tilelang 源码树，也不重新打包 tilelang
-- **零依赖**：只用 Python 标准库（import 协议 + site 机制），不引入任何运行时依赖
-- **边界明确**：未找到 PPU 对应实现的 CUDA 专有特性显式报错，绝不静默降级
+- **Zero-change migration**: existing idioms such as `import tilelang.cuda`, `from tilelang.cuda.intrinsics import ...`, `target="cuda"`, and `tl.transform.LowerTileOp()` work as-is
+- **Pure runtime approach**: takes effect upon pip install and reverts upon uninstall; neither the tilelang source tree is modified nor tilelang is repackaged
+- **Zero dependencies**: relies only on the Python standard library (import protocol + site mechanism), introducing no runtime dependencies
+- **Explicit boundaries**: CUDA-specific features with no PPU counterpart raise explicit errors — never silent degradation
 
-> **非官方第三方项目**：本仓库与 TileLang、tilelang-sail 及其开发团队没有任何关联，也未获得其认可或支持。本包不包含、不修改二者的任何代码——所有兼容逻辑在运行时由独立安装的 wrapper 提供。tilelang-sail 自身的问题请反馈至其官方渠道。
+> **Unofficial third-party project**: This repository is not affiliated with, endorsed, or supported by TileLang, tilelang-sail, or their development teams. This package contains and modifies none of their code — all compatibility logic is supplied at runtime by the independently installed wrapper. Please report issues with tilelang-sail itself to its official channels.
 
-## 背景
+## Background
 
-我们现有一批按 CUDA 风格编写的 TileLang 内核，迁移至 tilelang-sail（TileLang 的 PPU 后端版本）运行时，依次遇到三类不兼容问题：
+We had an existing collection of TileLang kernels written in CUDA style. When migrating them to tilelang-sail (the PPU-backend distribution of TileLang), we ran into three classes of incompatibility in sequence:
 
-1. **import**：`from tilelang.cuda.intrinsics import TensorCoreIntrinEmitter` 即报错——`tilelang.cuda` 模块本身可导入，但调用其中接口时触发原生错误。检查 `tilelang.ppu` 后发现同类能力均已提供，仅命名不同（`TensorCoreIntrinEmitter` → `PPUTensorCoreIntrinEmitter`）；
-2. **target**：逐一修正 import 后，`target="cuda"` 编译再次失败——PPU backend 不接受该 target；
-3. **pass**：将 target 改为 `"ppu"` 后，编译仍于 lowering 阶段失败——`LowerTileOp` / `LayoutInference` 等通用 pass 在 PPU target 上需改走 `tilelang.ppu.transform` 的专用实现。
+1. **import**: `from tilelang.cuda.intrinsics import TensorCoreIntrinEmitter` failed immediately — the `tilelang.cuda` module itself was importable, but invoking its interfaces triggered native errors. Inspecting `tilelang.ppu` revealed that equivalent capabilities were all available, merely under different names (`TensorCoreIntrinEmitter` → `PPUTensorCoreIntrinEmitter`);
+2. **target**: after fixing the imports one by one, compilation with `target="cuda"` failed again — the PPU backend does not accept that target;
+3. **pass**: after switching the target to `"ppu"`, compilation still failed during lowering — generic passes such as `LowerTileOp` / `LayoutInference` need to go through the dedicated implementations in `tilelang.ppu.transform` when running on the PPU target.
 
 
-## 安装 / 卸载
+## Install / Uninstall
 
-前置条件：已安装 tilelang-sail 的 PPU-only 构建（本 wrapper 的行为映射基于 tilelang-sail `<版本号>` 实测，其他版本未验证）。
+Prerequisite: the PPU-only build of tilelang-sail is installed. This wrapper currently targets tilelang-sail **0.1.11** and **0.1.12** — all behavior mappings were validated against these two versions; other versions are unverified.
 
 ```bash
-pip install .                               # 在本仓库根目录执行（无任何运行时依赖，不会重装 tilelang）
-pip uninstall tilelang-sail-cuda-wrapper    # 卸载，完全还原原生行为
+pip install .                               # run in the repository root (no runtime dependencies; tilelang is NOT reinstalled)
+pip uninstall tilelang-sail-cuda-wrapper    # uninstall; native behavior is fully restored
 ```
 
-安装/卸载后需**重启 Python 进程**方可生效（`.pth` 仅在解释器启动时注册拦截器；对已运行的进程无效）。
+A **Python process restart** is required after install/uninstall for changes to take effect (the `.pth` file registers the interceptor only at interpreter startup; running processes are unaffected).
 
-## 快速上手
+## Quick Start
 
 ```python
 import tilelang
 import tilelang.language as T
 
-# CUDA 风格 intrinsics —— wrapper 解析到 PPU 实现（PPUTensorCoreIntrinEmitter）
+# CUDA-style intrinsics — resolved by the wrapper to the PPU implementation (PPUTensorCoreIntrinEmitter)
 from tilelang.cuda.intrinsics import TensorCoreIntrinEmitter
 
-@tilelang.jit(target="cuda")    # 运行时重写为 PPU target，arch 按设备探测
+@tilelang.jit(target="cuda")    # rewritten at runtime to a PPU target; arch determined by device probing
 def matmul(A, B, block_M, block_N, block_K, num_stages, dtype=T.float16, accum_dtype=T.float32):
-    ...                          # 内核体与 CUDA 版完全相同
+    ...                          # kernel body identical to the CUDA version
 
 kernel = matmul.compile(M=1024, N=1024, K=1024,
                         block_M=128, block_N=128, block_K=32, num_stages=3)
-print(kernel.target)            # PPU target（arch=ppu_10 / ppu_15，按设备）
+print(kernel.target)            # PPU target (arch=ppu_10 / ppu_15, depending on the device)
 ```
 
-完整可运行示例（含 torch 数值校验）见 `tests/e2e_cuda_style.py`。
+For a complete runnable example (with numerical verification against torch), see `tests/e2e_cuda_style.py`.
 
-## 两种安装状态的行为
+## Behavior in the Two Installation States
 
-| | 未安装 wrapper（原生） | 安装 wrapper 后 |
+| | Without the wrapper (native) | With the wrapper installed |
 |---|---|---|
-| `import tilelang.cuda` | 原生包可导入，但调用其接口时触发原生错误 | 别名到 `tilelang.ppu`，CUDA 风格名可用 |
-| `from tilelang.cuda.intrinsics import TensorCoreIntrinEmitter` | ImportError / 原生实现 | 转发到 `PPUTensorCoreIntrinEmitter` |
-| `from tilelang.cuda.intrinsics.macro.mma_macro_generator import TensorCoreIntrinEmitter`（模块级路径，`tilelang.intrinsics` 门面亦走此路径） | 原生类 | 转发到 PPU 版（与包级入口解析到同一个类） |
-| ppu 未提供的 `tilelang.cuda` 子模块（`wgmma_macro_generator`、`tcgen05_macro_generator`、`mma_sm70/sm75_*` 等代际专有生成器） | 原生模块 | **原生加载**（不拦截，行为同未安装 wrapper） |
-| `TensorCoreIntrinEmitterWithLadderTransform`（ladder transform 布局插件，PPU 侧无对应实现） | 原生类 | **显式报错**（名字可解析，实例化/调用时 RuntimeError；保证 `tilelang.intrinsics` 门面可加载） |
-| `from tilelang.cuda.op.gemm.gemm_mma import GemmMMA`（通用 mma GEMM op 实现） | 原生类 | 转发到 `PPUGemmMMA`；代际专有文件（`gemm_mma_sm70/sm75`、`tcgen05`、`wgmma` 等）原生加载，行为同未安装 wrapper |
-| `from tilelang.cuda.pipeline import CUDAPassPipelineBody(Prologue)`（lowering pipeline 主体） | 原生函数 | 转发到 `PPUPassPipelineBody(Prologue)`；Hopper 专有门控（`allow_warp_specialized`、`module_has_tma`）显式报错 |
-| `tilelang.cuda.transform.MarkCudaSyncCalls` | 原生实现 | 转发到 `MarkPpuSyncCalls` |
-| CUDA-only pass（`LowerBlackwell2SM`、`InjectTcgen05Fence` 等） | 原生实现 | **显式报错**（无 PPU 对应实现） |
-| `target="cuda"`（jit/compile/autotune） | 编译报错 | 重写为 ppu；arch 未指定时由**设备探测**决定（实测与 determine_target 解析 ppu target 的结果一致，ppu_10 / ppu_15 按硬件代次），探测不可用则默认 **ppu_10**——对齐 TVM 对 CUDA 无设备时默认 sm_50 的做法；显式 arch 仅验证了 sm_80→ppu_10、sm_89→ppu_15，其余 **ValueError**（不做猜测映射） |
-| 其他 target（llvm/metal/rocm…，经 `determine_target`） | 原生行为 | **直接报错**（严格模式） |
-| `Target("llvm")`（引擎内部 host codegen） | 原生行为 | 放行（引擎内部必需，不拦截） |
-| `tl.transform.LowerTileOp()(mod)` 等 common pass | 通用实现 | mod 内含 ppu target → `tl.ppu.transform` 专用 pass；否则回退原生 |
-| 独立安装的 tvm（先于 tilelang 被 import） | 原生行为 | **不做任何改动**（仅 patch tilelang 自带的 vendored tvm） |
+| `import tilelang.cuda` | Native package is importable, but invoking its interfaces triggers native errors | Aliased to `tilelang.ppu`; CUDA-style names become usable |
+| `from tilelang.cuda.intrinsics import TensorCoreIntrinEmitter` | ImportError / native implementation | Forwarded to `PPUTensorCoreIntrinEmitter` |
+| `from tilelang.cuda.intrinsics.macro.mma_macro_generator import TensorCoreIntrinEmitter` (module-level path; the `tilelang.intrinsics` facade also resolves through this path) | Native class | Forwarded to the PPU version (resolves to the same class as the package-level entry) |
+| `tilelang.cuda` submodules not provided by ppu (`wgmma_macro_generator`, `tcgen05_macro_generator`, generation-specific generators such as `mma_sm70/sm75_*`) | Native module | **Loaded natively** (not intercepted; behaves as if the wrapper were absent) |
+| `TensorCoreIntrinEmitterWithLadderTransform` (ladder transform layout plugin; no PPU counterpart) | Native class | **Explicit error** (the name resolves; RuntimeError upon instantiation/call — this keeps the `tilelang.intrinsics` facade loadable) |
+| `from tilelang.cuda.op.gemm.gemm_mma import GemmMMA` (generic mma GEMM op implementation) | Native class | Forwarded to `PPUGemmMMA`; generation-specific files (`gemm_mma_sm70/sm75`, `tcgen05`, `wgmma`, etc.) load natively, behaving as if the wrapper were absent |
+| `from tilelang.cuda.pipeline import CUDAPassPipelineBody(Prologue)` (lowering pipeline body) | Native function | Forwarded to `PPUPassPipelineBody(Prologue)`; Hopper-specific gating (`allow_warp_specialized`, `module_has_tma`) raises explicit errors |
+| `tilelang.cuda.transform.MarkCudaSyncCalls` | Native implementation | Forwarded to `MarkPpuSyncCalls` |
+| CUDA-only passes (`LowerBlackwell2SM`, `InjectTcgen05Fence`, etc.) | Native implementation | **Explicit error** (no PPU counterpart) |
+| `target="cuda"` (jit/compile/autotune) | Compilation error | Rewritten to ppu; when arch is unspecified it is decided by **device probing** (verified to match what determine_target yields when parsing ppu targets — ppu_10 / ppu_15 by hardware generation); if probing is unavailable, defaults to **ppu_10** — aligned with TVM's behavior of defaulting to sm_50 for CUDA when no device is present; explicit arch mapping was only verified for sm_80→ppu_10 and sm_89→ppu_15 — everything else raises **ValueError** (no speculative mapping) |
+| Other targets (llvm/metal/rocm…, via `determine_target`) | Native behavior | **Immediate error** (strict mode) |
+| `Target("llvm")` (engine-internal host codegen) | Native behavior | Allowed through (required internally by the engine; not intercepted) |
+| Common passes such as `tl.transform.LowerTileOp()(mod)` | Generic implementation | If the mod contains a ppu target → the dedicated pass in `tl.ppu.transform`; otherwise falls back to the native one |
+| A separately installed tvm (imported before tilelang) | Native behavior | **Left completely untouched** (only the tvm vendored inside tilelang is patched) |
 
-## 工作原理
+## How It Works
 
-- **`sys.meta_path` finder（PEP 302/451）**：被动应答解释器的 import 请求，无 watcher、无线程、无轮询。插在 meta_path 最前端，先于原生 `tilelang/cuda` 目录命中；仅拦截 **ppu 后端实际提供**的 `tilelang.cuda.*` 子模块，ppu 未提供者（wgmma/tcgen05 等代际专有生成器）放行原生文件，行为与未安装 wrapper 时一致。
-- **`.pth` 激活**：pip 安装后由 `site` 机制在每次解释器启动时执行 `import tilelang_sail_cuda_wrapper`，注册 finder。启动开销 O(1)，不加载 tilelang/tvm。
-- **运行时别名（PEP 562）**：`tilelang.cuda.*` 模块通过模块级 `__getattr__` **懒转发**到 `tilelang.ppu.*`，并在属性访问时做 CUDA 风格名映射（`TensorCoreIntrinEmitter → PPUTensorCoreIntrinEmitter` 等）。子模块属性同样转发为对应的 cuda 别名，不会泄漏原始 ppu 模块。
-  - 为什么不用 `__dict__` 快照拷贝：`tilelang.ppu` 的加载链会反向 import `tilelang.cuda.*`（`intrinsics.macro` 下有模块引用 cuda 风格 layout），finder 会在 ppu 模块**尚未完成初始化**时被重入，快照会将该不完整状态固化于 `sys.modules`。懒转发不受影响——模块在原地填充，后续访问始终得到完整状态。
-- **加载后 patch**：`tvm.target` / `tilelang.transform` / `tilelang` 目标入口模块 / `tilelang.testing` 的真实 loader 被包装，模块加载完成后立即打 patch（Target 重写、pass 路由、严格模式、测试 gate 放宽）。目标入口模块随 tilelang 版本变化：0.1.11 为 `tilelang.utils.target`，0.1.12 为 `tilelang.backend.target`；finder 同时登记两个条目，实际运行时只会加载其中存在的一个，各版本各取所需、互不干扰。`tilelang.testing` 在用户测试代码 `import tilelang.testing` 时才加载，其 patch 将 `requires_cuda`（原生来自 tvm `Feature`，检查 `tvm.runtime.enabled("cuda")`，PPU-only 构建上恒为 False → 全部 skip）放宽为“CUDA 或 PPU 可用即不 skip”——与 tilelang 官方对 ROCm 的 `requires_cuda_or_cdna` 放宽方式同源；≤0.1.11 的 `requires_cuda_or_cdna` 也因原生 `target_is_cuda` 绑定被重定向到 ppu 判定而一并修复。
-- **tvm 归属判定**：`tvm.target` 的 patch 只作用于 **tilelang 自带的 vendored tvm**（`3rdparty/tvm/python`）。判定依据两级信号：优先从 `sys.modules["tilelang"].__file__` 推导 vendored 根（dev checkout 与 wheel 两种布局）比对 tvm 文件路径；tilelang 尚未加载时（此时只可能是用户先 import 了独立 tvm）退回路径签名（含 `3rdparty/tvm/python` 段）。独立安装的 tvm（如 `site-packages/tvm`）一律不做改动，其 `Target("cuda")` 原样透传。
-- **严格模式卡点在 `determine_target`**（实测 jit/compile/autotune 传入的 target 均汇聚于该入口），而非 `Target.__init__`：编译过程中引擎会自行构造 `Target("llvm")` 这类 host codegen target，必须放行。
+- **`sys.meta_path` finder (PEP 302/451)**: passively answers the interpreter's import requests — no watcher, no threads, no polling. Inserted at the very front of meta_path so it hits before the native `tilelang/cuda` directory; only the `tilelang.cuda.*` submodules **actually provided by the ppu backend** are intercepted — those ppu does not provide (generation-specific generators such as wgmma/tcgen05) fall through to the native files, behaving exactly as if the wrapper were absent.
+- **`.pth` activation**: after pip install, the `site` mechanism executes `import tilelang_sail_cuda_wrapper` on every interpreter startup, registering the finder. Startup cost is O(1); tilelang/tvm are not loaded.
+- **Runtime aliasing (PEP 562)**: `tilelang.cuda.*` modules **lazily forward** to `tilelang.ppu.*` via module-level `__getattr__`, performing CUDA-style name mapping on attribute access (`TensorCoreIntrinEmitter → PPUTensorCoreIntrinEmitter`, etc.). Submodule attributes are likewise forwarded to the corresponding cuda aliases, so the raw ppu modules never leak.
+  - Why not a `__dict__` snapshot copy: the loading chain of `tilelang.ppu` reverse-imports `tilelang.cuda.*` (under `intrinsics.macro` some modules reference cuda-style layouts), causing the finder to be re-entered while the ppu module is **still mid-initialization**; a snapshot would freeze that incomplete state into `sys.modules`. Lazy forwarding is immune — the module is populated in place, and subsequent accesses always see the complete state.
+- **Post-load patching**: the real loaders of `tvm.target` / `tilelang.transform` / tilelang's target entry module / `tilelang.testing` are wrapped, and the patches are applied immediately after the module finishes loading (Target rewriting, pass routing, strict mode, test-gate relaxation). The target entry module varies across tilelang versions: `tilelang.utils.target` in 0.1.11, `tilelang.backend.target` in 0.1.12; the finder registers both entries and, at runtime, only the one that exists gets loaded — each version gets what it needs without interference. `tilelang.testing` loads only when user test code does `import tilelang.testing`; its patch relaxes `requires_cuda` (natively sourced from tvm's `Feature`, which checks `tvm.runtime.enabled("cuda")` — always False on a PPU-only build → everything skipped) to "skip only if neither CUDA nor PPU is available" — the same approach tilelang officially takes for ROCm via `requires_cuda_or_cdna`; in ≤0.1.11, `requires_cuda_or_cdna` is also fixed, since its native `target_is_cuda` binding is redirected to the ppu check.
+- **tvm ownership detection**: the `tvm.target` patch applies **only to the tvm vendored inside tilelang** (`3rdparty/tvm/python`). Detection uses two levels of signals: first, the vendored root is derived from `sys.modules["tilelang"].__file__` (covering both the dev-checkout and wheel layouts) and compared against the tvm file path; if tilelang is not yet loaded (which can only mean the user imported a standalone tvm first), detection falls back to a path signature (a `3rdparty/tvm/python` path segment). A separately installed tvm (e.g. `site-packages/tvm`) is never touched; its `Target("cuda")` passes through unchanged.
+- **Strict mode is enforced at `determine_target`** (verified: targets passed by jit/compile/autotune all converge on this entry point), not at `Target.__init__`: during compilation the engine itself constructs host-codegen targets such as `Target("llvm")`, which must be allowed through.
 
-## 仓库结构
+## Repository Structure
 
 ```
 tilelang_sail_cuda_wrapper/
-├── __init__.py        # 激活入口：.pth 触发 install()（不加载 tilelang/tvm）
-├── _finder.py         # import 拦截骨架：meta_path finder、两个 loader、install()
-├── _aliases.py        # tilelang.cuda.* 别名模块合成、CUDA→PPU 名字映射、懒转发
-├── _targets.py        # Target 重写（arch 映射 / 设备探测）与严格模式校验
-├── _testing.py        # tilelang.testing 的 CUDA gate 放宽（requires_cuda 接受 PPU）
-├── _passes.py         # common pass → PPU 专用 pass 的路由
-└── _tvm_ownership.py  # tvm 归属判定：只 patch tilelang 自带的 vendored tvm
+├── __init__.py        # activation entry: .pth triggers install() (does not load tilelang/tvm)
+├── _finder.py         # import-interception skeleton: meta_path finder, two loaders, install()
+├── _aliases.py        # tilelang.cuda.* alias module synthesis, CUDA→PPU name mapping, lazy forwarding
+├── _targets.py        # Target rewriting (arch mapping / device probing) and strict-mode validation
+├── _testing.py        # CUDA gate relaxation for tilelang.testing (requires_cuda accepts PPU)
+├── _passes.py         # routing from common passes to PPU-specific passes
+└── _tvm_ownership.py  # tvm ownership detection: patch only the tvm vendored inside tilelang
 ```
 
-实现按职责拆成 6 个模块，各司其职：`_finder.py` 只保留 import 协议的骨架（finder / loader / `install()`），别名合成、target 语义、测试 gate、pass 路由、归属判定分别在对应模块。验证脚本在 `tests/` 下，不随包分发。
+The implementation is split into 6 modules by responsibility: `_finder.py` retains only the import-protocol skeleton (finder / loader / `install()`); alias synthesis, target semantics, test gating, pass routing, and ownership detection each live in their own module. Verification scripts live under `tests/` and are not distributed with the package.
 
-## 验证
+## Verification
 
-需在配有 PPU 设备的 tilelang-sail 环境中运行：
+Run inside a tilelang-sail environment with PPU hardware:
 
 ```bash
-python3 tests/verify_states.py native    # 未安装 wrapper 的原生行为基线
-python3 tests/verify_states.py wrapped   # 安装 wrapper 后的行为断言
-python3 tests/e2e_cuda_style.py          # 端到端：CUDA 风格 matmul 编译 + 数值验证
+python3 tests/verify_states.py native    # native-behavior baseline without the wrapper
+python3 tests/verify_states.py wrapped   # behavioral assertions with the wrapper installed
+python3 tests/e2e_cuda_style.py          # end to end: CUDA-style matmul compilation + numerical verification
 ```
 
-覆盖点：
+Coverage:
 
-- **双状态对照**：alias 转发、CUDA-only pass 显式报错、target 重写、严格模式、pass 路由、tvm 归属判定、`tilelang.cuda.target` 谓词、`tilelang.testing` 的 CUDA gate（requires_cuda / requires_cuda_or_cdna 不再 skip）、`tilelang.intrinsics` 门面（ladder transform 哨兵、wgmma/tcgen05 原生放行、模块级与包级 emitter 一致）；
-- **arch 规则**：设备探测（ppu_10 / ppu_15 按硬件代次）、sm_80 / sm_89 显式映射、其余 arch ValueError、无设备时回退至 ppu_10；
-- **端到端**：`target="cuda"` 的 matmul 经 PPU backend 编译（kernel target 为 ppu），数值与 torch 参考一致。
+- **Two-state comparison**: alias forwarding, explicit errors for CUDA-only passes, target rewriting, strict mode, pass routing, tvm ownership detection, the `tilelang.cuda.target` predicate, the CUDA gate in `tilelang.testing` (requires_cuda / requires_cuda_or_cdna no longer skip), and the `tilelang.intrinsics` facade (ladder-transform sentinel, native pass-through of wgmma/tcgen05, consistency between module-level and package-level emitters);
+- **Arch rules**: device probing (ppu_10 / ppu_15 by hardware generation), explicit sm_80 / sm_89 mappings, ValueError for all other archs, fallback to ppu_10 when no device is present;
+- **End to end**: a matmul with `target="cuda"` compiles through the PPU backend (the kernel's target is ppu) and matches the torch reference numerically.
 
-## 已知限制
+## Known Limitations
 
-- **严格模式**：本 wrapper 仅覆盖“CUDA 风格代码 → PPU”这一场景，经 `determine_target` 的其他 target（llvm/metal/rocm…）明确报错——无法覆盖的场景立即说明，而非静默产生错误行为；编译过程中引擎内部构造的 host codegen target（如 `Target("llvm")`）放行，不受影响。
-- **CUDA-only 特性显式报错**：10 个未找到 PPU 对应实现的 pass（Blackwell / Hopper 专有等）与 `TensorCoreIntrinEmitterWithLadderTransform`（ladder transform 布局插件）会抛出明确的 RuntimeError，而非静默降级或难以排查的 AttributeError；名字本身仍可 import（tilelang 自身的门面 re-export 依赖这一点），实际使用时才报错。
-- **arch 映射仅覆盖两个档位**：sm_80→ppu_10、sm_89→ppu_15，其余显式 arch 一律 ValueError。
-- **安装/卸载后需重启 Python 进程**：`.pth` 仅在解释器启动时执行。
-- tilelang-sail 升级后建议重新运行 `tests/` 下的验证脚本——wrapper 不修改其源码，但其内部行为可能随版本变化；如发现行为漂移或新的不兼容写法，欢迎提交 issue。
+- **Strict mode**: this wrapper covers only the "CUDA-style code → PPU" scenario; other targets going through `determine_target` (llvm/metal/rocm…) raise explicit errors — unsupported scenarios fail loudly rather than silently misbehaving. Host-codegen targets constructed internally by the engine during compilation (e.g. `Target("llvm")`) are allowed through and unaffected.
+- **Explicit errors for CUDA-only features**: 10 passes with no PPU counterpart (Blackwell / Hopper specific, etc.) and `TensorCoreIntrinEmitterWithLadderTransform` (the ladder-transform layout plugin) throw clear RuntimeErrors instead of silent degradation or hard-to-debug AttributeErrors; the names themselves remain importable (tilelang's own facade re-exports depend on this), and the error is raised only upon actual use.
+- **Supported tilelang-sail versions**: this wrapper currently targets tilelang-sail **0.1.11** and **0.1.12**, the two versions it was developed and validated against; it has not been tested with other versions.
+- **Arch mapping covers only two tiers**: sm_80→ppu_10 and sm_89→ppu_15; every other explicit arch raises ValueError.
+- **A Python process restart is required after install/uninstall**: the `.pth` file executes only at interpreter startup.
+- After upgrading tilelang-sail, re-running the verification scripts under `tests/` is recommended — the wrapper does not modify its source, but its internal behavior may change across versions. If you observe behavioral drift or new incompatible idioms, feel free to open an issue.
