@@ -31,12 +31,15 @@ behavior: native ``tilelang.cuda`` imports work again (and fail at call time
 on a PPU-only build, as expected) and CUDA targets are no longer rewritten.
 
 This module is intentionally import-light: it must not import ``tilelang`` or
-``tvm`` at activation time.
+``tvm`` at activation time.  ``_versions`` (version/layout detection for
+the running tilelang, plus the ``diagnostics()`` helper) only touches the
+standard library and is safe to import eagerly.
 """
 
+from . import _versions
 from ._finder import install
 
-__version__ = "0.1.0"
+__version__ = "1.0.0"
 
 # Register the meta-path finder.  Safe to call multiple times.
 install()

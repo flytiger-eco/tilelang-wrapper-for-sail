@@ -16,6 +16,9 @@ The implementation is split by responsibility:
 * ``_passes``    -- routing of common transform passes to PPU-specific ones.
 * ``_tvm_ownership`` -- whether a loaded ``tvm`` is tilelang's vendored
   copy (only that one may be patched).
+* ``_versions``  -- tilelang version/layout detection (``legacy``
+  ``<= 0.1.11`` vs ``modern`` ``>= 0.1.12``, both capability-probed with
+  the version table as advisory); consulted where the layouts fork.
 
 This module wires them together: ``find_spec`` answers import requests,
 ``_WrapperLoader`` applies a post-load patch, and ``install`` registers
