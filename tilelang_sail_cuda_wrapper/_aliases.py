@@ -120,9 +120,24 @@ _UNSUPPORTED = {
     # tilelang.intrinsics facade can still load.
     "intrinsics": {
         "TensorCoreIntrinEmitterWithLadderTransform": "ladder-transform layout plugin for MMA macros",
+        "TensorCoreIntrinEmitterSM120": "SM120 block-scale MMA emitter",
     },
     "intrinsics.macro": {
         "TensorCoreIntrinEmitterWithLadderTransform": "ladder-transform layout plugin for MMA macros",
+        "TensorCoreIntrinEmitterSM120": "SM120 block-scale MMA emitter",
+    },
+    # tilelang >= 0.1.15 added three SM120 block-scale ldmatrix layouts to
+    # the cuda mma_layout only; the ppu mma_layout never grew them.  The
+    # native mma_sm120_macro_generator module (served natively, like
+    # wgmma/tcgen05) from-imports these names through the alias package,
+    # so without stubs its import dies on an obscure "cannot import name"
+    # error.  With stubs the module imports (its layouts are referenced
+    # only inside method bodies) and the explicit error fires when an
+    # SM120-specific method actually runs.
+    "intrinsics.layout.mma_layout": {
+        "ldmatrix_32x16_to_shared_8x64_layout_b": "SM120 block-scale ldmatrix layout",
+        "ldmatrix_32x32_to_shared_16x64_layout_a": "SM120 block-scale ldmatrix layout",
+        "ldmatrix_32x32_to_shared_16x64_layout_b": "SM120 block-scale ldmatrix layout",
     },
     "intrinsics.macro.mma_macro_generator": {
         "TensorCoreIntrinEmitterWithLadderTransform": "ladder-transform layout plugin for MMA macros",
