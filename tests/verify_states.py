@@ -1,4 +1,16 @@
-"""State verification for tilelang-sail-cuda-wrapper in a PPU environment."""
+"""State verification for tilelang-sail-cuda-wrapper in a PPU environment.
+
+Structure: this runner holds the state dispatch (native/wrapped) and the
+COMMON wrapped steps -- checks whose contract is identical on every
+supported tilelang release.  Checks tied to a particular release (the
+tilelang.intrinsics facade split, the 0.1.15-only SM120/blockscaled/
+cuda.language surfaces, ...) live in per-release modules under steps/ and
+are dispatched at step 15; each one self-gates and reports active/inert.
+
+Run from the tests directory or as ``python tests/verify_states.py``
+(the script directory lands on sys.path, which is how ``import steps``
+resolves).
+"""
 
 import sys
 
@@ -39,6 +51,7 @@ elif state == "wrapped":
     # tilelang.ppu.target._detect_ppu_arch (>= 0.1.12).  Only the modules
     # the running tilelang ships with can be imported; probe both layouts.
     import importlib
+    import importlib.util
 
     _entry_modules = []
     for _modname in ("tilelang.utils.target", "tilelang.backend.target"):
@@ -220,12 +233,13 @@ elif state == "wrapped":
     print("[wrapped] tilelang.testing gates OK: requires_cuda accepts the PPU,",
           "target_is_cuda binding is", getattr(_testing_pred, "__name__", None))
 
-    # 11. tilelang.intrinsics facade: every re-exported name must resolve.
-    #     The ppu macro generator ships no ladder-transform emitter and no
-    #     wgmma/tcgen05 modules; the former is an explicit error stub, the
-    #     latter fall through to their native tilelang.cuda files.
-    import tilelang.intrinsics
-    _ladder = tilelang.intrinsics.TensorCoreIntrinEmitterWithLadderTransform
+    # 11. intrinsics layer, common part: the ladder-transform stub exists
+    #     at the alias level on every version, and module-level and
+    #     package-level emitters must resolve to the same class. The
+    #     top-level tilelang.intrinsics facade split (present on <= 0.1.12,
+    #     removed on >= 0.1.15) is a versioned surface: it is verified in
+    #     steps/facade_intrinsics.py.
+    from tilelang.cuda.intrinsics import TensorCoreIntrinEmitterWithLadderTransform as _ladder
     assert callable(_ladder), "LadderTransform stub not resolvable"
     try:
         _ladder(a_dtype="float16", b_dtype="float16", accum_dtype="float16")
@@ -233,19 +247,10 @@ elif state == "wrapped":
         sys.exit(1)
     except RuntimeError as e:
         print("[wrapped] LadderTransform stub rejects use:", str(e)[:90])
-    import tilelang.cuda.intrinsics.macro.wgmma_macro_generator as _wgmma
-    import tilelang.cuda.intrinsics.macro.tcgen05_macro_generator as _tcgen05
-    assert hasattr(_wgmma, "WGMMADescriptorParams"), "native wgmma re-exports missing"
-    assert hasattr(_tcgen05, "TCGEN05DescriptorParams"), "native tcgen05 re-exports missing"
-    assert tilelang.intrinsics.WGMMATensorCoreIntrinEmitter is _wgmma.TensorCoreIntrinEmitter, \
-        "facade wgmma re-export differs from the native module"
-    assert tilelang.intrinsics.TCGEN05TensorCoreIntrinEmitter is _tcgen05.TensorCoreIntrinEmitter, \
-        "facade tcgen05 re-export differs from the native module"
     from tilelang.cuda.intrinsics.macro.mma_macro_generator import TensorCoreIntrinEmitter as _mod_tc
     assert _mod_tc is tilelang.cuda.intrinsics.TensorCoreIntrinEmitter, \
         "module-level and package-level emitter resolve to different classes"
-    print("[wrapped] tilelang.intrinsics facade OK: ladder stub, native wgmma/tcgen05",
-          "passthrough, module/package emitter agreement")
+    print("[wrapped] intrinsics layer OK: ladder stub, module/package emitter agreement")
 
     # 12. op layer: the generic GEMM op class maps to its PPU counterpart
     #     (the generation-specific sm70/sm75 files stay native), and the
@@ -285,5 +290,34 @@ elif state == "wrapped":
         print("[wrapped] pipeline gates OK:", str(e)[:80])
     print("[wrapped] pipeline layer OK: CUDAPassPipelineBody(Prologue) ->",
           "PPU counterparts")
+
+    # 14. version/layout layer: the wrapper identifies the running tilelang
+    #     and picks the forwarding layout (capability probe first, version
+    #     table advisory); the detected layout must agree with the version.
+    import tilelang_sail_cuda_wrapper._versions as _versions_mod
+    _layout = _versions_mod.detect_layout()
+    assert _layout in ("legacy", "modern"), f"unexpected layout {_layout!r}"
+    _ver = _versions_mod.tilelang_version_tuple()
+    assert _ver is not None, "tilelang.__version__ did not parse"
+    _expected = "legacy" if _ver < (0, 1, 12) else "modern"
+    assert _layout == _expected, f"tilelang {_ver} mapped to {_layout!r}, expected {_expected!r}"
+    print(f"[wrapped] version layer OK: tilelang {_versions_mod.tilelang_version()!r}",
+          f"-> layout {_layout!r}")
+
+    # 15. version-split surfaces (tests/steps/): checks tied to a specific
+    #     tilelang release -- e.g. the tilelang.cuda.language dialect or
+    #     the SM120 macros (>= 0.1.15 only) -- live in per-release step
+    #     modules there.  Each module self-gates (probe-first, the parsed
+    #     version as a fast path) and run_all reports it as active or
+    #     inert, so the log shows exactly which side of each split this
+    #     tilelang exercised.
+    import types as _types
+    import steps as _steps
+    _ctx = _types.SimpleNamespace(
+        tl=tl,
+        version=_ver,
+        report=lambda msg: print("[wrapped]", msg),
+    )
+    _steps.run_all(_ctx)
 
 print(f"=== state '{state}' verification done ===")
