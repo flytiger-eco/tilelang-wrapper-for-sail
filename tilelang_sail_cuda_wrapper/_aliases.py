@@ -171,18 +171,34 @@ def _native_cuda_dir(rel: str):
 def _make_cuda_target_alias(fullname: str, spec=None) -> types.ModuleType:
     """Create the ``tilelang.cuda.target`` alias, portable across tilelang versions.
 
-    tilelang moved the target helpers across versions: >= 0.1.12 keeps them
-    in ``tilelang.ppu.target``, <= 0.1.11 flat in ``tilelang.utils.target``.
-    Pick whichever backend module exists and forward CUDA-style names onto
-    it.  Generation/feature predicates (target_is_hopper, ... ) have no
+    tilelang moved the target helpers across versions (see ``_versions``):
+    the "modern" layout (>= 0.1.12) keeps them in ``tilelang.ppu.target``,
+    the "legacy" one (<= 0.1.11) flat in ``tilelang.utils.target``.  The
+    layout decides which backend module to forward CUDA-style names onto;
+    an ImportError on the layout's pick falls back to the other one (the
+    capability-probe order the wrapper used before the layout table).
+    Generation/feature predicates (target_is_hopper, ...) have no
     ppu-side python wrapper on any version; they go straight to the tilelang
     FFI (the exact calls the native cuda module would make).
     """
-    try:
-        base = importlib.import_module("tilelang.ppu.target")  # >= 0.1.12
-        name_map = dict(_ALIASES["target"])
-    except ImportError:
-        base = importlib.import_module("tilelang.utils.target")  # <= 0.1.11
+    from ._versions import detect_layout, layout_target_modules
+
+    layout = detect_layout()
+    ppu_target_modname, legacy_target_modname = layout_target_modules(layout)
+    base = None
+    if ppu_target_modname is not None:
+        try:
+            base = importlib.import_module(ppu_target_modname)  # modern
+            name_map = dict(_ALIASES["target"])
+        except ImportError:
+            base = None
+    if base is None:
+        if legacy_target_modname is None:
+            raise ImportError(
+                "tilelang-sail-cuda-wrapper: no tilelang target module found "
+                f"for the detected layout {layout!r}"
+            )
+        base = importlib.import_module(legacy_target_modname)  # legacy
         name_map = dict(_LEGACY_TARGET_ALIASES)
 
     alias = types.ModuleType(fullname)
