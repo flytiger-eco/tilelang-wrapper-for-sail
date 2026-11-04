@@ -1,0 +1,674 @@
+[
+  {
+    "file_path": "testing/python/target/test_tilelang_codegen_cutedsl_cp_async.py",
+    "test_filter": "",
+    "extra_args": [],
+    "reason": "collection_error: ImportError – wrapper alias redirects tilelang.cuda.target to tilelang.ppu.target which lacks normalize_cutedsl_target",
+    "type": "collection_error",
+    "boards": [
+      "ZW-M890P",
+      "OAM-810E"
+    ]
+  },
+  {
+    "file_path": "testing/python/target/test_tilelang_codegen_cutedsl_integer_shift.py",
+    "test_filter": "",
+    "extra_args": [],
+    "reason": "collection_error: ImportError – wrapper alias redirects tilelang.cuda.target to tilelang.ppu.target which lacks normalize_cutedsl_target",
+    "type": "collection_error",
+    "boards": [
+      "ZW-M890P",
+      "OAM-810E"
+    ]
+  },
+  {
+    "file_path": "testing/python/target/test_tilelang_codegen_cutedsl_scan.py",
+    "test_filter": "",
+    "extra_args": [],
+    "reason": "collection_error: ImportError – wrapper alias redirects tilelang.cuda.target to tilelang.ppu.target which lacks normalize_cutedsl_target",
+    "type": "collection_error",
+    "boards": [
+      "ZW-M890P",
+      "OAM-810E"
+    ]
+  },
+  {
+    "file_path": "testing/python/transform/test_tilelang_transform_inject_tcgen05_fence.py",
+    "test_filter": "",
+    "extra_args": [],
+    "reason": "collection_error: ValueError – sm_100 has no PPU counterpart in wrapper arch mapping",
+    "type": "collection_error",
+    "boards": [
+      "ZW-M890P",
+      "OAM-810E"
+    ]
+  },
+  {
+    "file_path": "testing/python/transform/test_tilelang_transform_lower_shared_tmem.py",
+    "test_filter": "",
+    "extra_args": [],
+    "reason": "collection_error: module-level Target(sm_100) construction triggers ValueError – 'sm_100' has no PPU counterpart",
+    "type": "collection_error",
+    "boards": [
+      "ZW-M890P",
+      "OAM-810E"
+    ]
+  },
+  {
+    "file_path": "testing/python/transform/test_tilelang_transform_pipeline_planning.py",
+    "test_filter": "",
+    "extra_args": [],
+    "reason": "collection_error: module-level Target(sm_90a) construction triggers ValueError – 'sm_90a' has no PPU counterpart",
+    "type": "collection_error",
+    "boards": [
+      "ZW-M890P",
+      "OAM-810E"
+    ]
+  },
+  {
+    "file_path": "testing/python/autotune/test_tilelang_autotune_scalar_inputs.py",
+    "test_filter": "test_autotune_scalar_inputs_require_explicit_supply",
+    "extra_args": [],
+    "reason": "wrapper+baseline: DID NOT RAISE ValueError – autotune scalar validation gap in pinned v0.1.12",
+    "type": "failure",
+    "boards": [
+      "ZW-M890P"
+    ]
+  },
+  {
+    "file_path": "testing/python/cache/test_tilelang_cuda_binary_cache.py",
+    "test_filter": "test_cuda_binary_cache_hit_skips_nvcc_compile",
+    "extra_args": [],
+    "reason": "wrapper: test constructs sm_90a target which wrapper rejects – ValueError 'sm_90a has no PPU counterpart'",
+    "type": "failure",
+    "boards": [
+      "ZW-M890P",
+      "OAM-810E"
+    ]
+  },
+  {
+    "file_path": "testing/python/debug/test_pass_visualizer.py",
+    "test_filter": "test_build_pass_stages_nonempty",
+    "extra_args": [],
+    "reason": "wrapper: RuntimeError – 'allow_warp_specialized' is a CUDA-only feature with no PPU counterpart",
+    "type": "failure",
+    "boards": [
+      "ZW-M890P",
+      "OAM-810E"
+    ]
+  },
+  {
+    "file_path": "testing/python/debug/test_pass_visualizer.py",
+    "test_filter": "test_build_pass_data_and_emit",
+    "extra_args": [],
+    "reason": "wrapper: RuntimeError – 'allow_warp_specialized' is a CUDA-only feature with no PPU counterpart",
+    "type": "failure",
+    "boards": [
+      "ZW-M890P",
+      "OAM-810E"
+    ]
+  },
+  {
+    "file_path": "testing/python/jit/test_tilelang_jit_diagnostics.py",
+    "test_filter": "test_nvcc_compile_cuda_honors_target_code",
+    "extra_args": [],
+    "reason": "wrapper: sm_100f target with code [sm_100a, sm_103a] rejected as unsupported by wrapper arch mapping",
+    "type": "failure",
+    "boards": [
+      "ZW-M890P",
+      "OAM-810E"
+    ]
+  },
+  {
+    "file_path": "testing/python/jit/test_tilelang_jit_diagnostics.py",
+    "test_filter": "test_cuda_compile_callback_uses_fatbin_for_multiple_target_code",
+    "extra_args": [],
+    "reason": "wrapper: sm_100f target with code [sm_100a, sm_103a] rejected as unsupported by wrapper arch mapping",
+    "type": "failure",
+    "boards": [
+      "ZW-M890P",
+      "OAM-810E"
+    ]
+  },
+  {
+    "file_path": "testing/python/jit/test_tilelang_jit_nvrtc.py",
+    "test_filter": "test_nvrtc_l2_persistent_map",
+    "extra_args": [],
+    "reason": "wrapper: target 'ppu' allowed execution backends are [tvm_ffi, cython], 'nvrtc' not included",
+    "type": "failure",
+    "boards": [
+      "ZW-M890P",
+      "OAM-810E"
+    ]
+  },
+  {
+    "file_path": "testing/python/language/test_tilelang_language_copy.py",
+    "test_filter": "test_tilelang_copy_uses_stmatrix_m16n8_for_sm100_int8_shared_store",
+    "extra_args": [],
+    "reason": "wrapper: sm_100a target rejected – ValueError 'sm_100a has no PPU counterpart'",
+    "type": "failure",
+    "boards": [
+      "ZW-M890P",
+      "OAM-810E"
+    ]
+  },
+  {
+    "file_path": "testing/python/language/test_tilelang_language_let.py",
+    "test_filter": "test_producer_bind_kernel",
+    "extra_args": [],
+    "reason": "wrapper: TVM InternalError – stage dependency check failed (src_info.stage <= dst_info.stage, 1 vs 0) during PPU codegen",
+    "type": "failure",
+    "boards": [
+      "ZW-M890P",
+      "OAM-810E"
+    ]
+  },
+  {
+    "file_path": "testing/python/language/test_tilelang_language_rand.py",
+    "test_filter": "test_rand_init_in_split_guard[curandStateMRG32k3a_t]",
+    "extra_args": [],
+    "reason": "wrapper: hgcc compile error – unknown type 'curandStateMRG32k3a_t', PPU SDK expects 'acrandStateMRG32k3a_t'",
+    "type": "failure",
+    "boards": [
+      "ZW-M890P",
+      "OAM-810E"
+    ]
+  },
+  {
+    "file_path": "testing/python/language/test_tilelang_language_rand.py",
+    "test_filter": "test_rand_init_in_split_guard[curandStatePhilox4_32_10_t]",
+    "extra_args": [],
+    "reason": "wrapper: hgcc compile error – unknown type 'curandStatePhilox4_32_10_t', PPU SDK expects 'acrandStatePhilox4_32_10_t'",
+    "type": "failure",
+    "boards": [
+      "ZW-M890P",
+      "OAM-810E"
+    ]
+  },
+  {
+    "file_path": "testing/python/language/test_tilelang_language_rand.py",
+    "test_filter": "test_rand_init_in_split_guard[curandStateXORWOW_t]",
+    "extra_args": [],
+    "reason": "wrapper: hgcc compile error – unknown type 'curandStateXORWOW_t', PPU SDK expects 'acrandStateXORWOW_t'",
+    "type": "failure",
+    "boards": [
+      "ZW-M890P",
+      "OAM-810E"
+    ]
+  },
+  {
+    "file_path": "testing/python/language/test_tilelang_language_warp_vote.py",
+    "test_filter": "test_fns_ballot_sync",
+    "extra_args": [],
+    "reason": "wrapper: PPU codegen emits 'tl::fns(...)' instead of expected '__fns(...)' – generated symbol name difference",
+    "type": "failure",
+    "boards": [
+      "ZW-M890P",
+      "OAM-810E"
+    ]
+  },
+  {
+    "file_path": "testing/python/profiler/test_bench_cupti.py",
+    "test_filter": "test_cupti_counts_torch_zeros_kernel_time",
+    "extra_args": [],
+    "reason": "wrapper: CUPTI profiling measured 0.0 kernel time on PPU (assert 0.0 > 0)",
+    "type": "failure",
+    "boards": [
+      "ZW-M890P"
+    ]
+  },
+  {
+    "file_path": "testing/python/target/test_tilelang_rocm_target.py",
+    "test_filter": "test_auto_target_uses_registered_detector_order_for_rocm",
+    "extra_args": [],
+    "reason": "wrapper: target kind 'hip' rejected – wrapper only supports 'cuda' and 'ppu' target kinds",
+    "type": "failure",
+    "boards": [
+      "ZW-M890P",
+      "OAM-810E"
+    ]
+  },
+  {
+    "file_path": "testing/python/target/test_tilelang_target.py",
+    "test_filter": "test_bare_cuda_target_uses_detected_exact_arch",
+    "extra_args": [],
+    "reason": "wrapper: determine_target('cuda') returns kind='ppu' instead of 'cuda' – wrapper rewrites cuda target to ppu",
+    "type": "failure",
+    "boards": [
+      "ZW-M890P",
+      "OAM-810E"
+    ]
+  },
+  {
+    "file_path": "testing/python/target/test_tilelang_target.py",
+    "test_filter": "test_cuda_target_code_attr_survives_target_normalization",
+    "extra_args": [],
+    "reason": "wrapper: sm_100f target with code [sm_100a, sm_103a] rejected as unsupported by wrapper arch mapping",
+    "type": "failure",
+    "boards": [
+      "ZW-M890P",
+      "OAM-810E"
+    ]
+  },
+  {
+    "file_path": "testing/python/transform/test_tilelang_transform_inject_ppu_uniform.py",
+    "test_filter": "TestInjectPpuUniform::test_non_ppu_target_is_unchanged",
+    "extra_args": [],
+    "reason": "wrapper: sm_80 cuda target rewritten to ppu_10, InjectPpuUniform injects ppu_to_uniform_b32 into unchanged IR",
+    "type": "failure",
+    "boards": [
+      "ZW-M890P",
+      "OAM-810E"
+    ]
+  },
+  {
+    "file_path": "testing/python/carver/test_tilelang_carver_generate_hints.py",
+    "test_filter": "test_general_matmul_emit_configs",
+    "extra_args": [],
+    "reason": "OAM-810E: Unsupported target ppu in carver",
+    "type": "failure",
+    "boards": [
+      "OAM-810E"
+    ]
+  },
+  {
+    "file_path": "testing/python/carver/test_tilelang_carver_generate_hints.py",
+    "test_filter": "test_general_matmul_matmul_emit_configs",
+    "extra_args": [],
+    "reason": "OAM-810E: Unsupported target ppu in carver",
+    "type": "failure",
+    "boards": [
+      "OAM-810E"
+    ]
+  },
+  {
+    "file_path": "testing/python/components/test_tilelang_pass_config_disable_tma_lower.py",
+    "test_filter": "test_disable_tma_lower_warns_in_jit_entry",
+    "extra_args": [],
+    "reason": "OAM-810E: Unsupported target kind 'c' in wrapper",
+    "type": "failure",
+    "boards": [
+      "OAM-810E"
+    ]
+  },
+  {
+    "file_path": "testing/python/cuda/test_cuda_f32x2_intrinsics.py",
+    "test_filter": "test_codegen_binary[add2-bfloat16]",
+    "extra_args": [],
+    "reason": "OAM-810E: __nv_bfloat162 codegen assertion",
+    "type": "failure",
+    "boards": [
+      "OAM-810E"
+    ]
+  },
+  {
+    "file_path": "testing/python/cuda/test_cuda_f32x2_intrinsics.py",
+    "test_filter": "test_codegen_binary[sub2-bfloat16]",
+    "extra_args": [],
+    "reason": "OAM-810E: __nv_bfloat162 codegen assertion",
+    "type": "failure",
+    "boards": [
+      "OAM-810E"
+    ]
+  },
+  {
+    "file_path": "testing/python/cuda/test_cuda_f32x2_intrinsics.py",
+    "test_filter": "test_codegen_binary[mul2-bfloat16]",
+    "extra_args": [],
+    "reason": "OAM-810E: __nv_bfloat162 codegen assertion",
+    "type": "failure",
+    "boards": [
+      "OAM-810E"
+    ]
+  },
+  {
+    "file_path": "testing/python/cuda/test_cuda_f32x2_intrinsics.py",
+    "test_filter": "test_codegen_binary[max2-bfloat16]",
+    "extra_args": [],
+    "reason": "OAM-810E: __nv_bfloat162 codegen assertion",
+    "type": "failure",
+    "boards": [
+      "OAM-810E"
+    ]
+  },
+  {
+    "file_path": "testing/python/cuda/test_cuda_f32x2_intrinsics.py",
+    "test_filter": "test_codegen_binary[min2-bfloat16]",
+    "extra_args": [],
+    "reason": "OAM-810E: __nv_bfloat162 codegen assertion",
+    "type": "failure",
+    "boards": [
+      "OAM-810E"
+    ]
+  },
+  {
+    "file_path": "testing/python/cuda/test_cuda_f32x2_intrinsics.py",
+    "test_filter": "test_codegen_fma2[bfloat16]",
+    "extra_args": [],
+    "reason": "OAM-810E: __nv_bfloat162 codegen assertion",
+    "type": "failure",
+    "boards": [
+      "OAM-810E"
+    ]
+  },
+  {
+    "file_path": "testing/python/cuda/test_cuda_f32x2_intrinsics.py",
+    "test_filter": "test_codegen_abs2[bfloat16]",
+    "extra_args": [],
+    "reason": "OAM-810E: __nv_bfloat162 codegen assertion",
+    "type": "failure",
+    "boards": [
+      "OAM-810E"
+    ]
+  },
+  {
+    "file_path": "testing/python/cuda/test_cuda_f32x2_intrinsics.py",
+    "test_filter": "test_codegen_auto_vec_f32[add]",
+    "extra_args": [],
+    "reason": "OAM-810E: Unmapped CUDA arch sm_100",
+    "type": "failure",
+    "boards": [
+      "OAM-810E"
+    ]
+  },
+  {
+    "file_path": "testing/python/cuda/test_cuda_f32x2_intrinsics.py",
+    "test_filter": "test_codegen_auto_vec_f32[sub]",
+    "extra_args": [],
+    "reason": "OAM-810E: Unmapped CUDA arch sm_100",
+    "type": "failure",
+    "boards": [
+      "OAM-810E"
+    ]
+  },
+  {
+    "file_path": "testing/python/cuda/test_cuda_f32x2_intrinsics.py",
+    "test_filter": "test_codegen_auto_vec_f32[mul]",
+    "extra_args": [],
+    "reason": "OAM-810E: Unmapped CUDA arch sm_100",
+    "type": "failure",
+    "boards": [
+      "OAM-810E"
+    ]
+  },
+  {
+    "file_path": "testing/python/cuda/test_cuda_f32x2_intrinsics.py",
+    "test_filter": "test_codegen_auto_vec_f32_no_sm80[add]",
+    "extra_args": [],
+    "reason": "OAM-810E: SM80 auto-vectorized tl::op2 assertion failure",
+    "type": "failure",
+    "boards": [
+      "OAM-810E"
+    ]
+  },
+  {
+    "file_path": "testing/python/cuda/test_cuda_f32x2_intrinsics.py",
+    "test_filter": "test_codegen_auto_vec_f32_no_sm80[sub]",
+    "extra_args": [],
+    "reason": "OAM-810E: SM80 auto-vectorized tl::op2 assertion failure",
+    "type": "failure",
+    "boards": [
+      "OAM-810E"
+    ]
+  },
+  {
+    "file_path": "testing/python/cuda/test_cuda_f32x2_intrinsics.py",
+    "test_filter": "test_codegen_auto_vec_f32_no_sm80[mul]",
+    "extra_args": [],
+    "reason": "OAM-810E: SM80 auto-vectorized tl::op2 assertion failure",
+    "type": "failure",
+    "boards": [
+      "OAM-810E"
+    ]
+  },
+  {
+    "file_path": "testing/python/cuda/test_cuda_f32x2_intrinsics.py",
+    "test_filter": "test_codegen_auto_vec_fma_f32",
+    "extra_args": [],
+    "reason": "OAM-810E: Unmapped CUDA arch sm_100",
+    "type": "failure",
+    "boards": [
+      "OAM-810E"
+    ]
+  },
+  {
+    "file_path": "testing/python/cuda/test_cuda_f32x2_intrinsics.py",
+    "test_filter": "test_codegen_auto_vec_fma_half_types[bfloat16]",
+    "extra_args": [],
+    "reason": "OAM-810E: __nv_bfloat162 codegen assertion",
+    "type": "failure",
+    "boards": [
+      "OAM-810E"
+    ]
+  },
+  {
+    "file_path": "testing/python/cuda/test_cuda_f32x2_intrinsics.py",
+    "test_filter": "test_codegen_auto_vec_half_types[add-bfloat16]",
+    "extra_args": [],
+    "reason": "OAM-810E: __nv_bfloat162 codegen assertion",
+    "type": "failure",
+    "boards": [
+      "OAM-810E"
+    ]
+  },
+  {
+    "file_path": "testing/python/cuda/test_cuda_f32x2_intrinsics.py",
+    "test_filter": "test_codegen_auto_vec_half_types[sub-bfloat16]",
+    "extra_args": [],
+    "reason": "OAM-810E: __nv_bfloat162 codegen assertion",
+    "type": "failure",
+    "boards": [
+      "OAM-810E"
+    ]
+  },
+  {
+    "file_path": "testing/python/cuda/test_cuda_f32x2_intrinsics.py",
+    "test_filter": "test_codegen_auto_vec_half_types[mul-bfloat16]",
+    "extra_args": [],
+    "reason": "OAM-810E: __nv_bfloat162 codegen assertion",
+    "type": "failure",
+    "boards": [
+      "OAM-810E"
+    ]
+  },
+  {
+    "file_path": "testing/python/cuda/test_cuda_mma_sm75_dispatch.py",
+    "test_filter": "test_sm75_uses_sm75_mma_gemm_impl",
+    "extra_args": [],
+    "reason": "OAM-810E: Unmapped CUDA arch sm_70",
+    "type": "failure",
+    "boards": [
+      "OAM-810E"
+    ]
+  },
+  {
+    "file_path": "testing/python/cuda/test_cuda_mma_sm75_dispatch.py",
+    "test_filter": "test_non_turing_int8_emitter_keeps_sm80_m16n8k32_shape",
+    "extra_args": [],
+    "reason": "OAM-810E: MMA shape mismatch m16n16k32 vs m16n8k32",
+    "type": "failure",
+    "boards": [
+      "OAM-810E"
+    ]
+  },
+  {
+    "file_path": "testing/python/cuda/test_cuda_mma_sm75_dispatch.py",
+    "test_filter": "test_ladder_transform_int8_micro_size_uses_actual_k_dim",
+    "extra_args": [],
+    "reason": "OAM-810E: LadderTransform layout plugin not supported in wrapper",
+    "type": "failure",
+    "boards": [
+      "OAM-810E"
+    ]
+  },
+  {
+    "file_path": "testing/python/issue/test_tilelang_issue_1810.py",
+    "test_filter": "test_issue_1810_l2_persistent_float16_host_stub_no_half",
+    "extra_args": [],
+    "reason": "OAM-810E: L2 persistent host stub symbol missing from codegen",
+    "type": "failure",
+    "boards": [
+      "OAM-810E"
+    ]
+  },
+  {
+    "file_path": "testing/python/issue/test_tilelang_issue_sm120_tma_smem_alignment.py",
+    "test_filter": "test_tma_smem_alignment_codegen_sm90_hopper",
+    "extra_args": [],
+    "reason": "OAM-810E: Unmapped CUDA arch sm_90",
+    "type": "failure",
+    "boards": [
+      "OAM-810E"
+    ]
+  },
+  {
+    "file_path": "testing/python/issue/test_tilelang_issue_sm120_tma_smem_alignment.py",
+    "test_filter": "test_tma_smem_alignment_codegen_sm100_blackwell_dc",
+    "extra_args": [],
+    "reason": "OAM-810E: Unmapped CUDA arch sm_100",
+    "type": "failure",
+    "boards": [
+      "OAM-810E"
+    ]
+  },
+  {
+    "file_path": "testing/python/issue/test_tilelang_issue_sm120_tma_smem_alignment.py",
+    "test_filter": "test_tma_smem_alignment_codegen_sm120_blackwell_consumer",
+    "extra_args": [],
+    "reason": "OAM-810E: Unmapped CUDA arch sm_120",
+    "type": "failure",
+    "boards": [
+      "OAM-810E"
+    ]
+  },
+  {
+    "file_path": "testing/python/jit/test_tilelang_jit_cutedsl_host_codegen.py",
+    "test_filter": "test_cutedsl_cache_restore_does_not_fallback_to_host_source",
+    "extra_args": [],
+    "reason": "OAM-810E: ImportError normalize_cutedsl_target missing from wrapper alias",
+    "type": "failure",
+    "boards": [
+      "OAM-810E"
+    ]
+  },
+  {
+    "file_path": "testing/python/kernel/test_tilelang_kernel_gemm.py",
+    "test_filter": "test_gemm_i8i8i32_tn",
+    "extra_args": [],
+    "reason": "OAM-810E: Unsupported k_dim 32 for i8 GEMM",
+    "type": "failure",
+    "boards": [
+      "OAM-810E"
+    ]
+  },
+  {
+    "file_path": "testing/python/language/test_tilelang_language_cluster.py",
+    "test_filter": "test_clc_query_codegen_includes_cluster_header",
+    "extra_args": [],
+    "reason": "OAM-810E: Cluster operations not supported on PPU backend",
+    "type": "failure",
+    "boards": [
+      "OAM-810E"
+    ]
+  },
+  {
+    "file_path": "testing/python/language/test_tilelang_language_pdl.py",
+    "test_filter": "test_pdl_trigger",
+    "extra_args": [],
+    "reason": "OAM-810E: Unmapped CUDA arch sm_90",
+    "type": "failure",
+    "boards": [
+      "OAM-810E"
+    ]
+  },
+  {
+    "file_path": "testing/python/language/test_tilelang_language_pdl.py",
+    "test_filter": "test_pdl_sync",
+    "extra_args": [],
+    "reason": "OAM-810E: Unmapped CUDA arch sm_90",
+    "type": "failure",
+    "boards": [
+      "OAM-810E"
+    ]
+  },
+  {
+    "file_path": "testing/python/target/test_tilelang_alloc_barrier_target_guard.py",
+    "test_filter": "test_alloc_barrier_rejected_on_pre_hopper_target",
+    "extra_args": [],
+    "reason": "OAM-810E: Unmapped CUDA arch sm_86",
+    "type": "failure",
+    "boards": [
+      "OAM-810E"
+    ]
+  },
+  {
+    "file_path": "testing/python/target/test_tilelang_alloc_barrier_target_guard.py",
+    "test_filter": "test_no_barrier_compiles_on_pre_hopper_target",
+    "extra_args": [],
+    "reason": "OAM-810E: Unmapped CUDA arch sm_86",
+    "type": "failure",
+    "boards": [
+      "OAM-810E"
+    ]
+  },
+  {
+    "file_path": "testing/python/target/test_tilelang_rocm_target.py",
+    "test_filter": "test_determine_target_adds_rdna_thread_warp_size",
+    "extra_args": [],
+    "reason": "OAM-810E: Unsupported target kind 'hip'",
+    "type": "failure",
+    "boards": [
+      "OAM-810E"
+    ]
+  },
+  {
+    "file_path": "testing/python/target/test_tilelang_rocm_target.py",
+    "test_filter": "test_determine_target_adds_known_gfx12_thread_warp_size",
+    "extra_args": [],
+    "reason": "OAM-810E: Unsupported target kind 'hip'",
+    "type": "failure",
+    "boards": [
+      "OAM-810E"
+    ]
+  },
+  {
+    "file_path": "testing/python/tilelibrary/test_tilelang_tilelibrary_gemm_sp.py",
+    "test_filter": "test_gemm_ss[128-128-64-False-True-float8_e5m2-float8_e5m2-float32-128-128-64-2-128-int32]",
+    "extra_args": [],
+    "reason": "OAM-810E: hgcc compilation failure with float8_e5m2 structured sparsity",
+    "type": "failure",
+    "boards": [
+      "OAM-810E"
+    ]
+  },
+  {
+    "file_path": "testing/python/tilelibrary/test_tilelang_tilelibrary_gemm_sp.py",
+    "test_filter": "test_gemm_rs[128-128-64-False-True-float8_e5m2-float8_e5m2-float32-128-128-64-2-128-int32]",
+    "extra_args": [],
+    "reason": "OAM-810E: hgcc compilation failure with float8_e5m2 structured sparsity",
+    "type": "failure",
+    "boards": [
+      "OAM-810E"
+    ]
+  },
+  {
+    "file_path": "testing/python/tilelibrary/test_tilelang_tilelibrary_gemm_sp.py",
+    "test_filter": "test_gemm_sr[128-128-64-False-True-float8_e5m2-float8_e5m2-float32-128-128-64-2-128-int32]",
+    "extra_args": [],
+    "reason": "OAM-810E: hgcc compilation failure with float8_e5m2 structured sparsity",
+    "type": "failure",
+    "boards": [
+      "OAM-810E"
+    ]
+  },
+  {
+    "file_path": "testing/python/tilelibrary/test_tilelang_tilelibrary_gemm_sp.py",
+    "test_filter": "test_gemm_rr[128-128-64-False-True-float8_e5m2-float8_e5m2-float32-128-128-64-2-128-int32]",
+    "extra_args": [],
+    "reason": "OAM-810E: hgcc compilation failure with float8_e5m2 structured sparsity",
+    "type": "failure",
+    "boards": [
+      "OAM-810E"
+    ]
+  }
+]
