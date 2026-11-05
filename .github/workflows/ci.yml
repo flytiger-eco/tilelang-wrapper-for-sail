@@ -1,0 +1,415 @@
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+    types:
+      - labeled
+      - unlabeled
+      - opened
+      - synchronize
+      - reopened
+      - ready_for_review
+  workflow_dispatch:
+    inputs:
+      board_matrix:
+        description: 'PPU board matrix JSON array (optional)'
+        required: false
+        default: '["ZW-M890P", "OAM-810E"]'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: "${{ github.workflow }}-${{ github.ref }}"
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  PYTHONDEVMODE: "1"
+  PYTHONUNBUFFERED: "1"
+  PYTHONPATH: ""  # explicit cleanup
+  PIP_USER: ""    # explicit cleanup
+  COLUMNS: "100"
+  FORCE_COLOR: "1"
+  CLICOLOR_FORCE: "1"
+
+  # Pinned TileLang v0.1.12 baseline (branch commit SHA)
+  TILELANG_REF: "81823f36f7462e253d60a95ae0238c62c30489f7"
+
+jobs:
+  ppu-tests:
+    name: PPU Test (${{ matrix.board }})
+    runs-on: k8s-runner-group-cpu-flytiger
+    container:
+      image: ghcr.io/actions/actions-runner:latest
+    timeout-minutes: 360
+    strategy:
+      fail-fast: false
+      matrix:
+        board: ${{ fromJson(github.event.inputs.board_matrix || '["ZW-M890P", "OAM-810E"]') }}
+    steps:
+      - name: Checkout wrapper
+        uses: actions/checkout@v7
+
+      - name: Checkout TileLang ${{ env.TILELANG_REF }}
+        uses: actions/checkout@v7
+        with:
+          repository: t-head/tilelang-for-sail
+          ref: ${{ env.TILELANG_REF }}
+          path: tilelang-src
+          submodules: recursive
+
+      - name: Validate board type
+        id: validate-board
+        shell: bash
+        env:
+          BOARD: ${{ matrix.board }}
+        run: |
+          case "$BOARD" in
+            ZW-M890P|OAM-810E) ;;
+            *) echo "FATAL: board value '${BOARD}' is not in the allowlist [ZW-M890P, OAM-810E]" >&2; exit 1 ;;
+          esac
+
+      - name: Build and Test on PPU
+        id: ppu-test
+        uses: flytiger-eco/shared-workflows/cluster-task@8f8d8196598c65635a90219a60bac4c0a2585aa0
+        with:
+          image: pkg.flytiger-eco.com/docker_release/pytorch:sdk2.2.0-2.10.0-ubuntu24.04-cuda13.0-py312-eic-20261010
+          nnodes: "0"
+          nproc_per_node: "1"
+          node_selector: "board-type=${{ matrix.board }}"
+          namespace: ppu-sched
+          extra_env: "BOARD_TYPE=${{ matrix.board }}"
+          timeout_minutes: "300"
+          source_dir: /workspace/source
+          command: |
+            set -Eeuo pipefail
+            git config --global --add safe.directory '*'
+            export PIP_INDEX_URL="https://pkg.flytiger-eco.com/artifactory/api/pypi/pypi_index/simple"
+            export PIP_TRUSTED_HOST="pkg.flytiger-eco.com"
+            set +u  # PPU_SDK envsetup.sh may reference undefined variables
+            source /usr/local/PPU_SDK/envsetup.sh
+            set -u
+
+            WRAPPER_ROOT=/workspace/source
+            TILELANG_ROOT=/workspace/source/tilelang-src
+
+            # ---- Build TileLang 0.1.12 wheel from pinned source ----
+            cd /workspace/source/tilelang-src
+            pip install wheel build setuptools cython packaging 'setuptools==68.1.2'
+            NO_VERSION_LABEL=OFF NO_GIT_VERSION=1 python -m build --wheel || { echo "[FATAL] tilelang wheel build failed"; exit 1; }
+
+            # ---- Install PPU-specific dependencies ----
+            pip install pytest==9.0.0 pyyaml==6.0.3 junit-xml
+            pip install einops==0.8.1 ninja==1.13.0 mkl==2021.4.0 cuda-bindings==13.0
+            pip install 'z3-solver>=4.13.0,<4.15.5' tabulate
+            pip uninstall -y nvidia-cuda-nvrtc 2>/dev/null || true
+            # Use the image-preinstalled torch/triton.
+            # Install system deps
+            apt-get update && apt-get upgrade -y && apt-get install -y libopenmpi-dev 2>/dev/null || true
+
+            # Comment out the REPO_ROOT in-tree import override block that conflicts with wheel install
+            sed -i '/^REPO_ROOT/,/^$/{ /^$/!s/^/# / }' "$TILELANG_ROOT/testing/conftest.py"
+
+            # Install the single built TileLang wheel (fail closed)
+            shopt -s nullglob
+            TILELANG_WHEELS=("$TILELANG_ROOT"/dist/*.whl)
+            shopt -u nullglob
+            if [[ ${#TILELANG_WHEELS[@]} -ne 1 ]]; then
+              echo "[FATAL] expected exactly one TileLang wheel in '$TILELANG_ROOT/dist', found ${#TILELANG_WHEELS[@]}" >&2
+              exit 1
+            fi
+            pip install "${TILELANG_WHEELS[0]}"
+
+            # ---- Install flash_attn (explicit mirror, user-requested) ----
+            pip install flash_attn==2.8.2 -i https://pkg.flytiger-eco.com/artifactory/api/pypi/pypi_index/simple
+
+            # ---- Install wrapper (non-editable, no runtime deps) ----
+            cd "$WRAPPER_ROOT"
+            pip install --no-deps --no-build-isolation "$WRAPPER_ROOT" || { echo "[FATAL] wrapper installation failed"; exit 1; }
+
+            # ---- Verify wrapper activation (fail-closed, new Python process) ----
+            python -c "
+            import sys
+
+            found = any(type(f).__name__ == '_CudaPpuFinder' for f in sys.meta_path)
+            if not found:
+                print('FATAL: _CudaPpuFinder not found in sys.meta_path', file=sys.stderr)
+                sys.exit(1)
+            print('OK: _CudaPpuFinder registered in sys.meta_path')
+            " || { echo "[FATAL] wrapper activation verification failed"; exit 1; }
+
+            # ---- Setup test environment ----
+            cd /workspace
+            ln -sf source/tilelang-src tilelang
+            cp "$TILELANG_ROOT"/.github/scripts/*_skip.json "$TILELANG_ROOT"/
+
+            # Use board type directly as platform name (skip files are named <BOARD_TYPE>_skip.json)
+            export CI_TEST_PLATFORM="$BOARD_TYPE"
+            if [[ ! -f "$TILELANG_ROOT/${CI_TEST_PLATFORM}_skip.json" ]]; then
+              echo "ERROR: Skip file '${CI_TEST_PLATFORM}_skip.json' not found for BOARD_TYPE='$BOARD_TYPE'. Refusing to run without a valid skip list." >&2
+              exit 1
+            fi
+
+            echo "Board: $BOARD_TYPE -> Platform: $CI_TEST_PLATFORM"
+
+            # ---- Apply unified wrapper skip overlay (fail-closed, boards-filtered) ----
+            WRAPPER_SKIP="$WRAPPER_ROOT/.github/scripts/wrapper_skip.json"
+            echo "Applying unified wrapper skip config from CI scripts: $WRAPPER_SKIP (platform=$CI_TEST_PLATFORM)"
+            if [[ ! -f "$WRAPPER_SKIP" ]]; then
+              echo "FATAL: required CI script wrapper skip file not found at $WRAPPER_SKIP" >&2
+              exit 1
+            fi
+            python3 -c "
+            import ast
+            import json
+            import os
+            import posixpath
+            import sys
+            import tempfile
+
+            skip_file   = sys.argv[1]
+            runner_path = sys.argv[2]
+            board_skip  = sys.argv[3]
+            platform    = sys.argv[4]
+
+            KNOWN_BOARDS = frozenset({'ZW-M890P', 'OAM-810E'})
+            if platform not in KNOWN_BOARDS:
+                print(f'FATAL: platform {platform!r} is not in allowlist {sorted(KNOWN_BOARDS)}', file=sys.stderr)
+                sys.exit(1)
+
+            with open(skip_file) as f:
+                try:
+                    entries = json.load(f)
+                except (json.JSONDecodeError, ValueError) as exc:
+                    print(f'FATAL: invalid JSON in {skip_file}: {exc}', file=sys.stderr)
+                    sys.exit(1)
+
+            if not isinstance(entries, list):
+                print(f'FATAL: schema error – expected JSON array in {skip_file}', file=sys.stderr)
+                sys.exit(1)
+
+            REQUIRED_KEYS = frozenset({'file_path', 'test_filter', 'extra_args', 'reason', 'type', 'boards'})
+            ALLOWED_TYPES = frozenset({'failure', 'collection_error'})
+            ce_paths = []
+            failure_rows = []
+            seen_ce = set()
+            seen_fail = set()
+            for i, e in enumerate(entries):
+                if not isinstance(e, dict):
+                    tname = type(e).__name__
+                    print(f'FATAL: entry [{i}] must be a JSON object, got {tname}', file=sys.stderr)
+                    sys.exit(1)
+                entry_keys = set(e.keys())
+                if entry_keys != REQUIRED_KEYS:
+                    missing = sorted(REQUIRED_KEYS - entry_keys)
+                    extra = sorted(entry_keys - REQUIRED_KEYS)
+                    parts = []
+                    if missing:
+                        parts.append(f'missing: {missing}')
+                    if extra:
+                        parts.append(f'unexpected: {extra}')
+                    detail = ', '.join(parts)
+                    print(f'FATAL: entry [{i}] key mismatch – {detail}', file=sys.stderr)
+                    sys.exit(1)
+                entry_type = e['type']
+                if entry_type not in ALLOWED_TYPES:
+                    print(f'FATAL: entry [{i}] type must be one of {sorted(ALLOWED_TYPES)}, got {entry_type!r}', file=sys.stderr)
+                    sys.exit(1)
+                boards = e['boards']
+                if not isinstance(boards, list) or not boards:
+                    print(f'FATAL: entry [{i}] boards must be a non-empty array, got {boards!r}', file=sys.stderr)
+                    sys.exit(1)
+                for j, b in enumerate(boards):
+                    if not isinstance(b, str):
+                        btype = type(b).__name__
+                        print(f'FATAL: entry [{i}] boards[{j}] must be a string, got {btype}', file=sys.stderr)
+                        sys.exit(1)
+                    if b not in KNOWN_BOARDS:
+                        print(f'FATAL: entry [{i}] boards[{j}] = {b!r} not in allowlist {sorted(KNOWN_BOARDS)}', file=sys.stderr)
+                        sys.exit(1)
+                for field in ('file_path', 'reason'):
+                    val = e[field]
+                    if not isinstance(val, str) or not val.strip():
+                        print(f'FATAL: entry [{i}] {field} must be a non-empty non-blank string, got {val!r}', file=sys.stderr)
+                        sys.exit(1)
+                fp = e['file_path']
+                cc = [f'U+{ord(ch):04X}' for ch in fp if not ch.isprintable()]
+                if cc:
+                    print(f'FATAL: entry [{i}] file_path contains non-printable characters: {cc}', file=sys.stderr)
+                    sys.exit(1)
+                fp_norm = posixpath.normpath(fp)
+                if posixpath.isabs(fp_norm):
+                    print(f'FATAL: entry [{i}] file_path must be relative, got absolute: {fp!r}', file=sys.stderr)
+                    sys.exit(1)
+                if '..' in fp.split('/'):
+                    print(f'FATAL: entry [{i}] file_path contains parent-directory traversal: {fp!r}', file=sys.stderr)
+                    sys.exit(1)
+                tf = e['test_filter']
+                if not isinstance(tf, str):
+                    tftype = type(tf).__name__
+                    print(f'FATAL: entry [{i}] test_filter must be a string, got {tftype}', file=sys.stderr)
+                    sys.exit(1)
+                cc_tf = [f'U+{ord(ch):04X}' for ch in tf if not ch.isprintable()]
+                if cc_tf:
+                    print(f'FATAL: entry [{i}] test_filter contains non-printable characters: {cc_tf}', file=sys.stderr)
+                    sys.exit(1)
+                ea = e['extra_args']
+                if not isinstance(ea, list):
+                    eatype = type(ea).__name__
+                    print(f'FATAL: entry [{i}] extra_args must be a list, got {eatype}', file=sys.stderr)
+                    sys.exit(1)
+                for j, arg in enumerate(ea):
+                    if not isinstance(arg, str):
+                        atype = type(arg).__name__
+                        print(f'FATAL: entry [{i}] extra_args[{j}] must be a string, got {atype}', file=sys.stderr)
+                        sys.exit(1)
+                if entry_type == 'collection_error':
+                    if tf != '':
+                        print(f'FATAL: entry [{i}] type=collection_error requires empty test_filter, got {tf!r}', file=sys.stderr)
+                        sys.exit(1)
+                    if ea != []:
+                        print(f'FATAL: entry [{i}] type=collection_error requires empty extra_args, got {ea!r}', file=sys.stderr)
+                        sys.exit(1)
+                else:
+                    if not tf.strip():
+                        print(f'FATAL: entry [{i}] type=failure requires non-empty test_filter', file=sys.stderr)
+                        sys.exit(1)
+                if platform not in boards:
+                    continue
+                if entry_type == 'collection_error':
+                    if fp_norm in seen_ce:
+                        print(f'FATAL: entry [{i}] duplicate collection_error file_path (after normalization): {fp!r}', file=sys.stderr)
+                        sys.exit(1)
+                    seen_ce.add(fp_norm)
+                    ce_paths.append(fp_norm)
+                else:
+                    key = (fp_norm, tf)
+                    if key in seen_fail:
+                        print(f'FATAL: entry [{i}] duplicate failure (file_path, test_filter): ({fp!r}, {tf!r})', file=sys.stderr)
+                        sys.exit(1)
+                    seen_fail.add(key)
+                    failure_rows.append({
+                        'file_path':   fp,
+                        'test_filter': tf,
+                        'extra_args':  list(ea),
+                        'reason':      e['reason'],
+                    })
+
+            # ---- Inject collection_error ignores into test runner ----
+            with open(runner_path) as f:
+                src = f.read()
+            marker = 'COLLECT_IGNORE_PATHS = ['
+            if src.count(marker) != 1:
+                print(f'FATAL: expected exactly one {marker!r} in {runner_path}, found {src.count(marker)}', file=sys.stderr)
+                sys.exit(1)
+            inject_lines = ''.join(f'    {json.dumps(p, ensure_ascii=False)},\n' for p in ce_paths)
+            new_content = src.replace(marker, marker + '\n' + inject_lines, 1)
+            try:
+                ast.parse(new_content, filename=runner_path)
+            except SyntaxError as exc:
+                print(f'FATAL: injected runner is not valid Python: {exc}', file=sys.stderr)
+                sys.exit(1)
+            _tmp_name = None
+            try:
+                with tempfile.NamedTemporaryFile(mode='w', delete=False, dir=os.path.dirname(runner_path) or '.', suffix='.tmp') as _tmp:
+                    _tmp_name = _tmp.name
+                    _tmp.write(new_content)
+                    _tmp.flush()
+                    os.fsync(_tmp.fileno())
+                os.replace(_tmp_name, runner_path)
+            except BaseException:
+                if _tmp_name:
+                    try:
+                        os.unlink(_tmp_name)
+                    except OSError:
+                        pass
+                raise
+            print(f'  Injected {len(ce_paths)} collection-error ignore paths into {runner_path}')
+            for p in ce_paths:
+                print(f'    --ignore {p}')
+
+            # ---- Merge failure entries into board skip JSON ----
+            with open(board_skip) as f:
+                upstream = json.load(f)
+
+            existing = {(entry['file_path'], entry['test_filter']) for entry in upstream}
+            added = 0
+            for entry in failure_rows:
+                key = (entry['file_path'], entry['test_filter'])
+                if key not in existing:
+                    upstream.append(entry)
+                    existing.add(key)
+                    added += 1
+
+            _tmp_name = None
+            try:
+                with tempfile.NamedTemporaryFile(mode='w', delete=False, dir=os.path.dirname(board_skip) or '.', suffix='.tmp') as _tmp:
+                    _tmp_name = _tmp.name
+                    json.dump(upstream, _tmp, indent=2, ensure_ascii=False)
+                    _tmp.write('\n')
+                    _tmp.flush()
+                    os.fsync(_tmp.fileno())
+                os.replace(_tmp_name, board_skip)
+            except BaseException:
+                if _tmp_name:
+                    try:
+                        os.unlink(_tmp_name)
+                    except OSError:
+                        pass
+                raise
+            print(f'  Merged {added} failure skip entries (total {len(upstream)} in {board_skip})')
+            print('Wrapper skip merge complete.')
+            " "$WRAPPER_SKIP" "$TILELANG_ROOT/.github/scripts/test_tilelang.py" "$TILELANG_ROOT/${CI_TEST_PLATFORM}_skip.json" "$CI_TEST_PLATFORM" \
+              || { echo "FATAL: unified CI script wrapper skip merge failed"; exit 1; }
+
+            # ---- Run tests ----
+            cd "$TILELANG_ROOT"
+            python .github/scripts/test_tilelang.py -o test_result.xml -v --timeout 600 --workers 4 || TEST_RC=$?
+            TEST_RC=${TEST_RC:-0}
+
+            # ---- Archive results to NAS (errexit-safe) ----
+            NAS_RESULT_DIR="/mnt/wl_nas/devops/tilelang-wrapper-ci/${{ github.run_id }}/${{ github.run_attempt }}/${BOARD_TYPE}"
+            ARCHIVE_RC=0
+            mkdir -p "$NAS_RESULT_DIR" 2>/dev/null || {
+              ARCHIVE_RC=$?
+              echo "[ERROR] Failed to create archive directory '$NAS_RESULT_DIR' (exit code: $ARCHIVE_RC)" >&2
+            }
+            if [[ $ARCHIVE_RC -eq 0 ]]; then
+              cp test_result.xml "$NAS_RESULT_DIR/" 2>/dev/null || {
+                ARCHIVE_RC=$?
+                echo "[ERROR] Failed to archive test_result.xml to '$NAS_RESULT_DIR' (exit code: $ARCHIVE_RC)" >&2
+              }
+            fi
+
+            # Preserve test failure precedence, then propagate archive failures.
+            if [[ $TEST_RC -ne 0 ]]; then
+              exit "$TEST_RC"
+            elif [[ $ARCHIVE_RC -ne 0 ]]; then
+              exit "$ARCHIVE_RC"
+            fi
+            exit 0
+          cleanup_policy: always
+
+      - name: Test summary
+        if: ${{ !cancelled() && steps.validate-board.outcome == 'success' }}
+        shell: bash
+        env:
+          BOARD: ${{ matrix.board }}
+        run: |
+          # Defense-in-depth: re-validate board before constructing any paths
+          case "$BOARD" in
+            ZW-M890P|OAM-810E) ;;
+            *) echo "FATAL: board value '${BOARD}' failed allowlist check in summary step" >&2; exit 1 ;;
+          esac
+          NAS_RESULT_DIR="/wl_nas/devops/tilelang-wrapper-ci/${{ github.run_id }}/${{ github.run_attempt }}/${BOARD}"
+          python3 tilelang-src/.github/scripts/report_test_results.py \
+            --xml "$NAS_RESULT_DIR/test_result.xml" \
+            --title "TileLang Wrapper PPU Test Results (${BOARD})" \
+            --docker-image "pkg.flytiger-eco.com/docker_release/pytorch:sdk2.2.0-2.10.0-ubuntu24.04-cuda13.0-py312-eic-20261010" \
+            --run-number "${{ github.run_number }}" \
+            --branch "${GITHUB_HEAD_REF:-${GITHUB_REF_NAME}}" \
+            --job-status "${{ steps.ppu-test.outputs.job_status }}" \
+            --duration "${{ steps.ppu-test.outputs.duration_seconds }}" \
+            --pods "${{ steps.ppu-test.outputs.task_pods }}" \
+            >> $GITHUB_STEP_SUMMARY || true
