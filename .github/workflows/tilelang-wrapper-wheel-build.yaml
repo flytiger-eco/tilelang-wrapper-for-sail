@@ -1,0 +1,299 @@
+name: TileLang Wrapper temporary wheel upload
+
+on:
+  schedule:
+    - cron: '30 13 * * *'  # Daily at 21:30 Asia/Shanghai (UTC+8), staggered +1h after tilelang-for-sail nightly
+  workflow_call:
+    inputs:
+      matrix:
+        description: Board matrix as a JSON array
+        required: false
+        type: string
+        default: '["ZW-M890P"]'
+    secrets:
+      RELEASE_USERNAME:
+        required: true
+      RELEASE_TOKEN:
+        required: true
+      TEMPLATE_TOKEN:
+        required: false
+  workflow_dispatch:
+    inputs:
+      matrix:
+        description: Board matrix as a JSON array
+        required: false
+        type: string
+        default: '["ZW-M890P"]'
+  # TODO: REMOVE after nightly verification - temporary PR trigger for PR #4
+  pull_request:
+    types: [opened, synchronize]
+  # END TODO: REMOVE after nightly verification - temporary PR trigger
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tilelang-wrapper-nightly-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Same pinned image as ci.yml
+  SAIL_IMAGE: "pkg.flytiger-eco.com/docker_release/pytorch:sdk2.2.0-2.10.0-ubuntu24.04-cuda13.0-py312-eic-20261010"
+
+  # Pinned TileLang v0.1.12 baseline (branch commit SHA)
+  TILELANG_REF: "81823f36f7462e253d60a95ae0238c62c30489f7"
+
+jobs:
+  build-test:
+    name: test (${{ matrix.runner }})
+    runs-on: k8s-runner-group-cpu-flytiger
+    container:
+      image: ghcr.io/actions/actions-runner:latest
+    timeout-minutes: 480
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: ${{ fromJson(inputs.matrix || '["ZW-M890P"]') }}
+    # Cancel per leg; the workflow-level group cannot distinguish matrix legs.
+    concurrency:
+      group: tilelang-wrapper-nightly-${{ matrix.runner }}-${{ github.event.pull_request.number || github.ref }}
+      cancel-in-progress: true
+    steps:
+      - name: Checkout wrapper
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Checkout TileLang ${{ env.TILELANG_REF }}
+        uses: actions/checkout@v7
+        with:
+          repository: t-head/tilelang-for-sail
+          ref: ${{ env.TILELANG_REF }}
+          path: tilelang-src
+          submodules: recursive
+
+      - name: Validate board type
+        id: validate-board
+        shell: bash
+        env:
+          BOARD: ${{ matrix.runner }}
+        run: |
+          case "$BOARD" in
+            ZW-M890P|OAM-810E) ;;
+            *) echo "FATAL: board value '${BOARD}' is not in the allowlist [ZW-M890P, OAM-810E]" >&2; exit 1 ;;
+          esac
+
+      - name: Build and Test on PPU
+        id: ppu-test
+        uses: flytiger-eco/shared-workflows/cluster-task@8f8d8196598c65635a90219a60bac4c0a2585aa0
+        with:
+          image: ${{ env.SAIL_IMAGE }}
+          nnodes: "0"
+          nproc_per_node: "1"
+          node_selector: "board-type=${{ matrix.runner }}"
+          namespace: ppu-sched
+          extra_env: "BOARD_TYPE=${{ matrix.runner }}"
+          timeout_minutes: "300"
+          source_dir: /workspace/source
+          command: |
+            set -Eeuo pipefail
+            git config --global --add safe.directory '*'
+            export PIP_INDEX_URL="https://pkg.flytiger-eco.com/artifactory/api/pypi/pypi_index/simple"
+            export PIP_TRUSTED_HOST="pkg.flytiger-eco.com"
+            set +u  # PPU_SDK envsetup.sh may reference undefined variables
+            source /usr/local/PPU_SDK/envsetup.sh
+            set -u
+
+            WRAPPER_ROOT=/workspace/source
+            TILELANG_ROOT=/workspace/source/tilelang-src
+
+            # ---- Build TileLang 0.1.12 wheel from pinned source ----
+            cd /workspace/source/tilelang-src
+            pip install wheel build setuptools cython packaging 'setuptools==68.1.2'
+            NO_VERSION_LABEL=OFF NO_GIT_VERSION=1 python -m build --wheel || { echo "[FATAL] tilelang wheel build failed"; exit 1; }
+
+            # ---- Install PPU-specific dependencies ----
+            pip install pytest==9.0.0 pyyaml==6.0.3 junit-xml
+            pip install einops==0.8.1 ninja==1.13.0 mkl==2021.4.0 cuda-bindings==13.0
+            pip install 'z3-solver>=4.13.0,<4.15.5' tabulate
+            pip uninstall -y nvidia-cuda-nvrtc 2>/dev/null || true
+            # Use the image-preinstalled torch/triton.
+            # Install system deps
+            apt-get update && apt-get upgrade -y && apt-get install -y libopenmpi-dev 2>/dev/null || true
+
+            # Comment out the REPO_ROOT in-tree import override block that conflicts with wheel install
+            sed -i '/^REPO_ROOT/,/^$/{ /^$/!s/^/# / }' "$TILELANG_ROOT/testing/conftest.py"
+
+            # Install the single built TileLang wheel (fail closed)
+            shopt -s nullglob
+            TILELANG_WHEELS=("$TILELANG_ROOT"/dist/*.whl)
+            shopt -u nullglob
+            if [[ ${#TILELANG_WHEELS[@]} -ne 1 ]]; then
+              echo "[FATAL] expected exactly one TileLang wheel in '$TILELANG_ROOT/dist', found ${#TILELANG_WHEELS[@]}" >&2
+              exit 1
+            fi
+            pip install "${TILELANG_WHEELS[0]}"
+
+            # ---- Install flash_attn (explicit mirror, user-requested) ----
+            pip install flash_attn==2.8.2 -i https://pkg.flytiger-eco.com/artifactory/api/pypi/pypi_index/simple
+
+            # ---- Build wrapper wheel (setuptools 68.1.2 pinned above so the .pth lands in the wheel) ----
+            cd "$WRAPPER_ROOT"
+            python -m build --wheel --no-isolation || { echo "[FATAL] wrapper wheel build failed"; exit 1; }
+            shopt -s nullglob
+            WRAPPER_WHEELS=("$WRAPPER_ROOT"/dist/*.whl)
+            shopt -u nullglob
+            if [[ ${#WRAPPER_WHEELS[@]} -ne 1 ]]; then
+              echo "[FATAL] expected exactly one wrapper wheel in '$WRAPPER_ROOT/dist', found ${#WRAPPER_WHEELS[@]}" >&2
+              exit 1
+            fi
+
+            # ---- Stage wrapper wheel on NAS before testing so a failed suite still has the wheel ----
+            NIGHTLY_NAS_DIR="/mnt/wl_nas/devops/tilelang-wrapper-ci/nightly/${{ github.run_id }}/${{ github.run_attempt }}/${BOARD_TYPE}"
+            mkdir -p "$NIGHTLY_NAS_DIR/wheels"
+            # Only the wrapper wheel is published; TileLang is built and installed
+            # for testing but intentionally excluded from the upload artifact.
+            cp "${WRAPPER_WHEELS[0]}" "$NIGHTLY_NAS_DIR/wheels/"
+
+            # ---- Install wrapper from the built wheel (non-editable, no runtime deps) ----
+            pip install --no-deps --force-reinstall "${WRAPPER_WHEELS[0]}" || { echo "[FATAL] wrapper installation failed"; exit 1; }
+
+            # ---- Verify wrapper activation (fail-closed, new Python process) ----
+            python -c "
+            import sys
+
+            found = any(type(f).__name__ == '_CudaPpuFinder' for f in sys.meta_path)
+            if not found:
+                print('FATAL: _CudaPpuFinder not found in sys.meta_path', file=sys.stderr)
+                sys.exit(1)
+            print('OK: _CudaPpuFinder registered in sys.meta_path')
+            " || { echo "[FATAL] wrapper activation verification failed"; exit 1; }
+
+            # ---- Smoke test: wrapper end-to-end (CUDA-style API resolved to PPU) ----
+            cd "$WRAPPER_ROOT"
+            python tests/e2e_cuda_style.py || SMOKE_RC=$?
+            SMOKE_RC=${SMOKE_RC:-0}
+
+            # ---- Smoke test: curated tilelang PPU-representative cases ----
+            # Direct pytest subset replaces the full runner suite as the nightly
+            # gate. Every file below sits outside all board skip lists and the
+            # wrapper overlay, and was part of the 2875-case green run on ZW-M890P;
+            # the full suite remains the PR/push gate in ci.yml.
+            cd "$TILELANG_ROOT"
+            SMOKE_FILES=(
+              "examples/elementwise/test_example_elementwise.py"
+              "testing/python/ppu/kernel/test_ppu_kernel_gemm.py"
+              "testing/python/ppu/jit/test_ppu_jit_tvm_ffi.py"
+              "examples/ppu/topk/test_topk_tilelang.py"
+            )
+            set +e
+            python -m pytest "${SMOKE_FILES[@]}" -v --junitxml=test_result.xml
+            PYTEST_RC=$?
+            set -e
+            # Wrapper e2e failure takes precedence; otherwise gate on pytest rc
+            # (nonzero covers failures, errors and rc=5 zero-collection).
+            if [[ $SMOKE_RC -ne 0 ]]; then
+              exit "$SMOKE_RC"
+            fi
+            TEST_RC=$PYTEST_RC
+
+            # ---- Archive results to NAS (errexit-safe) ----
+            ARCHIVE_RC=0
+            cp test_result.xml "$NIGHTLY_NAS_DIR/" 2>/dev/null || {
+              ARCHIVE_RC=$?
+              echo "[ERROR] Failed to archive test_result.xml to '$NIGHTLY_NAS_DIR' (exit code: $ARCHIVE_RC)" >&2
+            }
+
+            # Preserve test failure precedence, then propagate archive failures.
+            if [[ $TEST_RC -ne 0 ]]; then
+              exit "$TEST_RC"
+            elif [[ $ARCHIVE_RC -ne 0 ]]; then
+              exit "$ARCHIVE_RC"
+            fi
+            exit 0
+          cleanup_policy: always
+
+      - name: Upload wheel artifact (${{ matrix.runner }})
+        # Only the first leg uploads: wheels are board independent. !cancelled()
+        # keeps the artifact available even when the UT phase failed.
+        if: ${{ !cancelled() && strategy.job-index == 0 }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: tilelang-wrapper-wheel-${{ github.run_id }}-${{ github.run_attempt }}-${{ matrix.runner }}
+          path: /wl_nas/devops/tilelang-wrapper-ci/nightly/${{ github.run_id }}/${{ github.run_attempt }}/${{ matrix.runner }}/wheels/*.whl
+          if-no-files-found: error
+          compression-level: 0
+          overwrite: true
+
+      - name: Test summary (${{ matrix.runner }})
+        if: ${{ !cancelled() && steps.validate-board.outcome == 'success' }}
+        shell: bash
+        env:
+          BOARD: ${{ matrix.runner }}
+        run: |
+          # Defense-in-depth: re-validate board before constructing any paths
+          case "$BOARD" in
+            ZW-M890P|OAM-810E) ;;
+            *) echo "FATAL: board value '${BOARD}' failed allowlist check in summary step" >&2; exit 1 ;;
+          esac
+          NAS_RESULT_DIR="/wl_nas/devops/tilelang-wrapper-ci/nightly/${{ github.run_id }}/${{ github.run_attempt }}/${BOARD}"
+          python3 tilelang-src/.github/scripts/report_test_results.py \
+            --xml "$NAS_RESULT_DIR/test_result.xml" \
+            --title "TileLang Wrapper Nightly Smoke Results (${BOARD})" \
+            --docker-image "${{ env.SAIL_IMAGE }}" \
+            --run-number "${{ github.run_number }}" \
+            --branch "${GITHUB_HEAD_REF:-${GITHUB_REF_NAME}}" \
+            --job-status "${{ steps.ppu-test.outputs.job_status }}" \
+            --duration "${{ steps.ppu-test.outputs.duration_seconds }}" \
+            --pods "${{ steps.ppu-test.outputs.task_pods }}" \
+            >> $GITHUB_STEP_SUMMARY || true
+
+  merge:
+    name: Merge board wheel artifacts
+    needs: build-test
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    outputs:
+      artifact_name: ${{ steps.artifact-name.outputs.artifact_name }}
+    steps:
+      - name: Set merged artifact name
+        id: artifact-name
+        shell: bash
+        run: echo 'artifact_name=tilelang-wrapper-wheels-${{ github.run_id }}-${{ github.run_attempt }}' >> "$GITHUB_OUTPUT"
+
+      - name: Merge wheel artifacts
+        uses: actions/upload-artifact/merge@v4
+        with:
+          name: ${{ steps.artifact-name.outputs.artifact_name }}
+          pattern: tilelang-wrapper-wheel-${{ github.run_id }}-${{ github.run_attempt }}-*
+          compression-level: 0
+          delete-merged: false
+
+  push:
+    name: Call temporary wheel upload template
+    needs: merge
+    uses: flytiger-eco/shared-workflows/.github/workflows/push-tmp-wheel.yml@main
+    with:
+      # run_attempt moves when only the publishing job is rerun.
+      artifact_name: ${{ needs.merge.outputs.artifact_name }}
+      template_repository: flytiger-eco/shared-workflows
+      template_ref: main
+    secrets:
+      release_username: ${{ secrets.RELEASE_USERNAME }}
+      release_token: ${{ secrets.RELEASE_TOKEN }}
+      # Read-only token; also enable cross-repo access in the template repo.
+      template_token: ${{ secrets.TEMPLATE_TOKEN }}
+
+  result:
+    name: Show batch directory URL
+    needs: push
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Write to logs and job summary
+        shell: bash
+        env:
+          UPLOAD_URL: ${{ needs.push.outputs.upload_url }}
+        run: |
+          set -euo pipefail
+          printf 'Batch directory: %s\n' "$UPLOAD_URL" | tee -a "$GITHUB_STEP_SUMMARY"
