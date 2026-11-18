@@ -28,11 +28,13 @@ Delete the file (or regenerate it when TILELANG_REF changes) to disable/refresh.
 Fail-closed guard: the injected filter accumulates kept/seen counts across all
 directory groups, and an injected aggregate check (called right after the scan
 loop, before the runner's "if not test_configs:" warning) fails the run when
-the allowlist matched none of the collected tests (seen > 0, kept == 0). A
-schema-valid but stale allowlist after a TILELANG_REF bump must not pass CI
+the allowlist kept none of the tests (kept == 0) - either because it matched
+none of the collected tests (a schema-valid stale allowlist after a
+TILELANG_REF bump) or because no tests survived collection and the board skip
+filters in the first place. Either way a configured board must not pass CI
 with zero coverage. Individual directory groups may legitimately keep 0 tests
-(the allowlist does not cover every group); only the aggregate zero-match is
-fatal. Every filter call also logs its kept/seen counts unconditionally.
+(the allowlist does not cover every group); only the aggregate is fatal.
+Every filter call also logs its kept/seen counts unconditionally.
 
 Usage:
     apply_ci_focus.py <focus.json> <runner.py> <platform>
@@ -90,22 +92,27 @@ def _wrapper_ci_focus_filter(tests):
 
 
 def _wrapper_ci_focus_check_aggregate():
-    """Fail closed when the allowlist matched none of the collected tests.
+    """Fail closed when the allowlist kept none of the tests.
 
     A single directory group keeping 0 tests is legitimate (the allowlist does
-    not cover every group); a zero match across ALL groups means the allowlist
-    is stale for this board/TILELANG_REF and the run would otherwise pass CI
-    with zero coverage.
+    not cover every group); keeping 0 across ALL groups means either a stale
+    allowlist for this board/TILELANG_REF (tests were collected but none
+    matched) or no tests surviving collection/skip filtering at all - either
+    way the run would otherwise pass CI with zero coverage.
     """
     import sys as _sys
 
-    if _WRAPPER_CI_FOCUS_SEEN and not _WRAPPER_CI_FOCUS_KEPT:
+    if not _WRAPPER_CI_FOCUS_KEPT:
+        if _WRAPPER_CI_FOCUS_SEEN:
+            _why = ("the allowlist is stale for this TILELANG_REF - regenerate "
+                    "it with gen_ci_focus_unified.py")
+        else:
+            _why = ("no tests survived collection and the board skip filters "
+                    "before the allowlist ran")
         print(
-            "FATAL: ci-focus allowlist matched 0 of %%d collected tests on board "
-            "%%r - the allowlist is stale for this TILELANG_REF. Regenerate it "
-            "with gen_ci_focus_unified.py, or delete wrapper_ci_focus.json to "
-            "run the full scope."
-            %% (_WRAPPER_CI_FOCUS_SEEN, _WRAPPER_CI_FOCUS_BOARD),
+            "FATAL: ci-focus allowlist kept 0 of %%d collected tests on board "
+            "%%r - %%s. Delete wrapper_ci_focus.json to run the full scope."
+            %% (_WRAPPER_CI_FOCUS_SEEN, _WRAPPER_CI_FOCUS_BOARD, _why),
             file=_sys.stderr,
         )
         _sys.exit(1)
