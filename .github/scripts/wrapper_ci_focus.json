@@ -1,0 +1,2242 @@
+{
+  "description": "wrapper CI focus allowlist (unified, per-case boards): keep only the wrapper-capability test set (B-class, pinned 81823f36 A/B measured on both boards: native skipped -> wrapped passed). ZW-M890P: 268 entries -> 429 items; OAM-810E: 255 entries -> 474 items; 238 entries are B-class on both boards (418-item intersection). Each case declares its own boards so a capability measured on one board never changes the other board's scope. Regenerate with scripts/skip_list/gen_ci_focus_unified.py when TILELANG_REF changes; a stale allowlist shows up as 'ci-focus allowlist: kept 0 of N' in CI logs.",
+  "boards": [
+    "ZW-M890P",
+    "OAM-810E"
+  ],
+  "cases": [
+    {
+      "file_path": "examples/attention_sink/test_example_attention_sink.py",
+      "test_filter": "test_example_gqa_sink_bwd_bhsd",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "examples/attention_sink/test_example_attention_sink.py",
+      "test_filter": "test_example_gqa_sink_bwd_bhsd_sliding_window",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "examples/attention_sink/test_example_attention_sink.py",
+      "test_filter": "test_example_mha_sink_bwd_bhsd",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "examples/attention_sink/test_example_attention_sink.py",
+      "test_filter": "test_example_mha_sink_bwd_bhsd_sliding_window",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "examples/attention_sink/test_example_attention_sink.py",
+      "test_filter": "test_example_mha_sink_fwd_bhsd_full_attn",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "examples/attention_sink/test_example_attention_sink.py",
+      "test_filter": "test_example_mha_sink_fwd_bhsd_sliding_window",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "examples/convolution/test_example_convolution.py",
+      "test_filter": "test_example_convolution",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "examples/convolution/test_example_convolution.py",
+      "test_filter": "test_example_convolution_autotune",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "examples/deepseek_mhc/test_example_mhc.py",
+      "test_filter": "test_mhc_post",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "examples/deepseek_mhc/test_example_mhc.py",
+      "test_filter": "test_mhc_pre",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "examples/deepseek_v4/test_tilelang_example_deepseek_v4.py",
+      "test_filter": "test_example_act_quant",
+      "boards": [
+        "ZW-M890P"
+      ]
+    },
+    {
+      "file_path": "examples/flash_attention/test_example_flash_attention.py",
+      "test_filter": "test_example_gqa_bwd",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "examples/flash_attention/test_example_flash_attention.py",
+      "test_filter": "test_example_gqa_fwd_bshd",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "examples/flash_attention/test_example_flash_attention.py",
+      "test_filter": "test_example_mha_bwd",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "examples/flash_attention/test_example_flash_attention.py",
+      "test_filter": "test_example_mha_bwd_bhsd",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "examples/flash_attention/test_example_flash_attention.py",
+      "test_filter": "test_example_mha_fwd_bhsd",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "examples/flash_attention/test_example_flash_attention.py",
+      "test_filter": "test_example_mha_fwd_bshd",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "examples/gemm_streamk/test_example_tilelang_gemm_streamk.py",
+      "test_filter": "test_example_tilelang_gemm_streamk",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "examples/seer_attention/test_block_sparse_attn_tilelang.py",
+      "test_filter": "test_block_sparse_attn_tilelang",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "examples/topk/test_topk_tilelang.py",
+      "test_filter": "test_topk_tilelang",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/autotune/test_pass_configs_tuning.py",
+      "test_filter": "test_autotune_decorator_pass_configs_override_jit_global",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/autotune/test_pass_configs_tuning.py",
+      "test_filter": "test_autotune_decorator_with_per_config_pass_configs",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/autotune/test_pass_configs_tuning.py",
+      "test_filter": "test_autotune_mixed_pass_configs",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/autotune/test_pass_configs_tuning.py",
+      "test_filter": "test_autotune_pass_configs_merge_with_global",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/autotune/test_pass_configs_tuning.py",
+      "test_filter": "test_autotune_with_per_config_pass_configs",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/autotune/test_tilelang_autotune.py",
+      "test_filter": "test_autotune_get_configs",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/autotune/test_tilelang_autotune.py",
+      "test_filter": "test_autotune_matmul",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/autotune/test_tilelang_autotune_do_not_specialize.py",
+      "test_filter": "test_do_not_specialize_all_specialized_params_same_cache",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/autotune/test_tilelang_autotune_do_not_specialize.py",
+      "test_filter": "test_do_not_specialize_kwargs_and_args",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/autotune/test_tilelang_autotune_do_not_specialize.py",
+      "test_filter": "test_do_not_specialize_new_key_for_m_param",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/autotune/test_tilelang_autotune_do_not_specialize.py",
+      "test_filter": "test_do_not_specialize_same_key_for_different_values",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/autotune/test_tilelang_autotune_do_not_specialize.py",
+      "test_filter": "test_do_not_specialize_threads_new_entry",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/carver/test_tilelang_carver_cuda_driver_properties.py",
+      "test_filter": "test_device_get_device_name",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/carver/test_tilelang_carver_cuda_driver_properties.py",
+      "test_filter": "test_device_get_max_dynamic_shared_size_bytes",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/carver/test_tilelang_carver_cuda_driver_properties.py",
+      "test_filter": "test_device_get_num_sms",
+      "boards": [
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/carver/test_tilelang_carver_cuda_driver_properties.py",
+      "test_filter": "test_device_get_persisting_l2_cache_size",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/carver/test_tilelang_carver_cuda_driver_properties.py",
+      "test_filter": "test_device_get_registers_per_block",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/carver/test_tilelang_carver_cuda_driver_properties.py",
+      "test_filter": "test_device_get_shared_memory_per_block",
+      "boards": [
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/carver/test_tilelang_carver_cuda_driver_properties.py",
+      "test_filter": "test_driver_get_device_properties",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/components/test_cuda_restrict_codegen.py",
+      "test_filter": "test_cuda_restrict_annotation_removes_restrict",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/components/test_cuda_restrict_codegen.py",
+      "test_filter": "test_cuda_restrict_default_has_restrict",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/components/test_cuda_shared_memory_alias_codegen.py",
+      "test_filter": "test_dynamic_shared_memory_merge_emits_named_aliases",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/cuda/test_cuda_f32x2_intrinsics.py",
+      "test_filter": "test_codegen_abs2",
+      "boards": [
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/cuda/test_cuda_f32x2_intrinsics.py",
+      "test_filter": "test_codegen_abs2[float16]",
+      "boards": [
+        "ZW-M890P"
+      ]
+    },
+    {
+      "file_path": "testing/python/cuda/test_cuda_f32x2_intrinsics.py",
+      "test_filter": "test_codegen_abs2[float32]",
+      "boards": [
+        "ZW-M890P"
+      ]
+    },
+    {
+      "file_path": "testing/python/cuda/test_cuda_f32x2_intrinsics.py",
+      "test_filter": "test_codegen_auto_vec_fma_half_types",
+      "boards": [
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/cuda/test_cuda_f32x2_intrinsics.py",
+      "test_filter": "test_codegen_auto_vec_fma_half_types[float16]",
+      "boards": [
+        "ZW-M890P"
+      ]
+    },
+    {
+      "file_path": "testing/python/cuda/test_cuda_f32x2_intrinsics.py",
+      "test_filter": "test_codegen_auto_vec_half_types",
+      "boards": [
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/cuda/test_cuda_f32x2_intrinsics.py",
+      "test_filter": "test_codegen_auto_vec_half_types[add-float16]",
+      "boards": [
+        "ZW-M890P"
+      ]
+    },
+    {
+      "file_path": "testing/python/cuda/test_cuda_f32x2_intrinsics.py",
+      "test_filter": "test_codegen_auto_vec_half_types[mul-float16]",
+      "boards": [
+        "ZW-M890P"
+      ]
+    },
+    {
+      "file_path": "testing/python/cuda/test_cuda_f32x2_intrinsics.py",
+      "test_filter": "test_codegen_auto_vec_half_types[sub-float16]",
+      "boards": [
+        "ZW-M890P"
+      ]
+    },
+    {
+      "file_path": "testing/python/cuda/test_cuda_f32x2_intrinsics.py",
+      "test_filter": "test_codegen_binary",
+      "boards": [
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/cuda/test_cuda_f32x2_intrinsics.py",
+      "test_filter": "test_codegen_binary[add2-float16]",
+      "boards": [
+        "ZW-M890P"
+      ]
+    },
+    {
+      "file_path": "testing/python/cuda/test_cuda_f32x2_intrinsics.py",
+      "test_filter": "test_codegen_binary[add2-float32]",
+      "boards": [
+        "ZW-M890P"
+      ]
+    },
+    {
+      "file_path": "testing/python/cuda/test_cuda_f32x2_intrinsics.py",
+      "test_filter": "test_codegen_binary[max2-float16]",
+      "boards": [
+        "ZW-M890P"
+      ]
+    },
+    {
+      "file_path": "testing/python/cuda/test_cuda_f32x2_intrinsics.py",
+      "test_filter": "test_codegen_binary[max2-float32]",
+      "boards": [
+        "ZW-M890P"
+      ]
+    },
+    {
+      "file_path": "testing/python/cuda/test_cuda_f32x2_intrinsics.py",
+      "test_filter": "test_codegen_binary[min2-float16]",
+      "boards": [
+        "ZW-M890P"
+      ]
+    },
+    {
+      "file_path": "testing/python/cuda/test_cuda_f32x2_intrinsics.py",
+      "test_filter": "test_codegen_binary[min2-float32]",
+      "boards": [
+        "ZW-M890P"
+      ]
+    },
+    {
+      "file_path": "testing/python/cuda/test_cuda_f32x2_intrinsics.py",
+      "test_filter": "test_codegen_binary[mul2-float16]",
+      "boards": [
+        "ZW-M890P"
+      ]
+    },
+    {
+      "file_path": "testing/python/cuda/test_cuda_f32x2_intrinsics.py",
+      "test_filter": "test_codegen_binary[mul2-float32]",
+      "boards": [
+        "ZW-M890P"
+      ]
+    },
+    {
+      "file_path": "testing/python/cuda/test_cuda_f32x2_intrinsics.py",
+      "test_filter": "test_codegen_binary[sub2-float16]",
+      "boards": [
+        "ZW-M890P"
+      ]
+    },
+    {
+      "file_path": "testing/python/cuda/test_cuda_f32x2_intrinsics.py",
+      "test_filter": "test_codegen_binary[sub2-float32]",
+      "boards": [
+        "ZW-M890P"
+      ]
+    },
+    {
+      "file_path": "testing/python/cuda/test_cuda_f32x2_intrinsics.py",
+      "test_filter": "test_codegen_fma2",
+      "boards": [
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/cuda/test_cuda_f32x2_intrinsics.py",
+      "test_filter": "test_codegen_fma2[float16]",
+      "boards": [
+        "ZW-M890P"
+      ]
+    },
+    {
+      "file_path": "testing/python/cuda/test_cuda_f32x2_intrinsics.py",
+      "test_filter": "test_codegen_fma2[float32]",
+      "boards": [
+        "ZW-M890P"
+      ]
+    },
+    {
+      "file_path": "testing/python/cuda/test_cuda_f32x2_intrinsics.py",
+      "test_filter": "test_correctness_abs2",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/cuda/test_cuda_f32x2_intrinsics.py",
+      "test_filter": "test_correctness_binary",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/cuda/test_cuda_f32x2_intrinsics.py",
+      "test_filter": "test_correctness_fma2",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/debug/test_pass_visualizer.py",
+      "test_filter": "test_capture_tree_returns_lines",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/debug/test_pass_visualizer.py",
+      "test_filter": "test_inspect_structure_renders_tree",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/debug/test_tilelang_debug_print.py",
+      "test_filter": "test_debug_print_buffer_cuda_fp8",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/fastmath/test_mathops_fastmath.py",
+      "test_filter": "test_abs_maps_to_fabs",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/fastmath/test_mathops_fastmath.py",
+      "test_filter": "test_fastmath_versions",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/fastmath/test_mathops_fastmath.py",
+      "test_filter": "test_mathops_generate_no_fastmath",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/fastmath/test_mathops_fastmath.py",
+      "test_filter": "test_round_ties_away_from_zero_uses_roundf",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/fastmath/test_mathops_fastmath.py",
+      "test_filter": "test_two_arg_mathops_fastmath",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/issue/test_tilelang_issue_1001.py",
+      "test_filter": "test_cumsum_view_infer_layout",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/issue/test_tilelang_issue_1008.py",
+      "test_filter": "test_fill_with_dynamic_region_kernel",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/issue/test_tilelang_issue_1008.py",
+      "test_filter": "test_fill_with_static_region_kernel",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/issue/test_tilelang_issue_1257.py",
+      "test_filter": "test_issue_1257_missing_syncthreads_after_atomic_add_on_shared",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/issue/test_tilelang_issue_1549.py",
+      "test_filter": "test_issue_1549_strange_var_vectorization",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/issue/test_tilelang_issue_1601.py",
+      "test_filter": "test_issue_1601",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/issue/test_tilelang_issue_1719.py",
+      "test_filter": "test_issue_1719_layout_1",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/issue/test_tilelang_issue_1719.py",
+      "test_filter": "test_issue_1719_layout_3",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/issue/test_tilelang_issue_1744.py",
+      "test_filter": "test",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/issue/test_tilelang_issue_1846.py",
+      "test_filter": "test_issue_1846_eager_jit_call_executes",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/issue/test_tilelang_issue_1993.py",
+      "test_filter": "test_issue_1993_dynamic_zero_grid_dim",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/issue/test_tilelang_issue_1993.py",
+      "test_filter": "test_issue_1993_static_zero_grid_dim",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/issue/test_tilelang_issue_2188.py",
+      "test_filter": "test_named_barrier_arrive_api",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/issue/test_tilelang_issue_2307.py",
+      "test_filter": "test_fragment_read_assert_parallel_loop_is_partitioned",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/issue/test_tilelang_issue_2433.py",
+      "test_filter": "test_issue_2433",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/issue/test_tilelang_issue_830.py",
+      "test_filter": "test_empty_kernel_lowering",
+      "boards": [
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/issue/test_tilelang_issue_830.py",
+      "test_filter": "test_empty_kernel_with_binding_variants",
+      "boards": [
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/issue/test_tilelang_issue_serial_fragment_access.py",
+      "test_filter": "test_issue_2393_serial_reduce_gemm_fragment_is_rejected",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/issue/test_tilelang_u32_signed_decode.py",
+      "test_filter": "test_u32_to_int_to_float_sign_extends_subword_values",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/kernel/test_tilelang_kernel_gemm.py",
+      "test_filter": "test_gemm_f16f16f16_nn",
+      "boards": [
+        "ZW-M890P"
+      ]
+    },
+    {
+      "file_path": "testing/python/kernel/test_tilelang_kernel_gemm.py",
+      "test_filter": "test_gemm_f16f16f16_nt",
+      "boards": [
+        "ZW-M890P"
+      ]
+    },
+    {
+      "file_path": "testing/python/kernel/test_tilelang_kernel_gemm.py",
+      "test_filter": "test_gemm_f16f16f16_rs",
+      "boards": [
+        "ZW-M890P"
+      ]
+    },
+    {
+      "file_path": "testing/python/kernel/test_tilelang_kernel_gemm.py",
+      "test_filter": "test_gemm_f16f16f16_sr",
+      "boards": [
+        "ZW-M890P"
+      ]
+    },
+    {
+      "file_path": "testing/python/kernel/test_tilelang_kernel_gemm.py",
+      "test_filter": "test_gemm_f16f16f16_tn",
+      "boards": [
+        "ZW-M890P"
+      ]
+    },
+    {
+      "file_path": "testing/python/kernel/test_tilelang_kernel_gemm.py",
+      "test_filter": "test_gemm_f32f32f32_nn",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/kernel/test_tilelang_kernel_gemm.py",
+      "test_filter": "test_gemm_f32f32f32_nt",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/kernel/test_tilelang_kernel_gemm.py",
+      "test_filter": "test_gemm_f32f32f32_tn",
+      "boards": [
+        "ZW-M890P"
+      ]
+    },
+    {
+      "file_path": "testing/python/kernel/test_tilelang_kernel_gemm.py",
+      "test_filter": "test_gemm_i8i8i32_nt",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/kernel/test_tilelang_kernel_gemm.py",
+      "test_filter": "test_gemm_i8i8i32_tn",
+      "boards": [
+        "ZW-M890P"
+      ]
+    },
+    {
+      "file_path": "testing/python/kernel/test_tilelang_kernel_gemm.py",
+      "test_filter": "test_pad_aligned_f16f16f16_nn",
+      "boards": [
+        "ZW-M890P"
+      ]
+    },
+    {
+      "file_path": "testing/python/kernel/test_tilelang_kernel_gemm.py",
+      "test_filter": "test_pad_f16f16f16_nn",
+      "boards": [
+        "ZW-M890P"
+      ]
+    },
+    {
+      "file_path": "testing/python/kernel/test_tilelang_kernel_gemm_batched.py",
+      "test_filter": "test_gemm_f16f16f16_nn",
+      "boards": [
+        "ZW-M890P"
+      ]
+    },
+    {
+      "file_path": "testing/python/kernel/test_tilelang_kernel_gemm_simt.py",
+      "test_filter": "test_assert_tl_matmul_int8",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/language/test_tilelang_language_access_ptr_codegen.py",
+      "test_filter": "test_access_ptr_cp_async_codegen",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/language/test_tilelang_language_access_ptr_codegen.py",
+      "test_filter": "test_async_copy_tileop_lowers_to_cp_async",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/language/test_tilelang_language_access_ptr_codegen.py",
+      "test_filter": "test_async_copy_tileop_rejects_invalid_cp_async_scope",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/language/test_tilelang_language_access_ptr_codegen.py",
+      "test_filter": "test_vectorized_cp_async_num_elems_codegen",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/language/test_tilelang_language_access_ptr_codegen.py",
+      "test_filter": "test_vectorized_int4_cp_async_num_elems_codegen",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/language/test_tilelang_language_alloc.py",
+      "test_filter": "test_alloc_multi_vars_with_initializer",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/language/test_tilelang_language_alloc.py",
+      "test_filter": "test_alloc_var_with_initializer",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/language/test_tilelang_language_alloc_var_cmp.py",
+      "test_filter": "test_alloc_var_eq",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/language/test_tilelang_language_alloc_var_cmp.py",
+      "test_filter": "test_alloc_var_ne",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/language/test_tilelang_language_annotate_safe_value.py",
+      "test_filter": "test_tilelang_copy",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/language/test_tilelang_language_atomic.py",
+      "test_filter": "test_atomic_add_mixed_dtype_fp16",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/language/test_tilelang_language_atomic.py",
+      "test_filter": "test_atomic_addx2_half",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/language/test_tilelang_language_atomic.py",
+      "test_filter": "test_atomic_different_memory_orders",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/language/test_tilelang_language_atomic.py",
+      "test_filter": "test_atomic_load_store",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/language/test_tilelang_language_atomic.py",
+      "test_filter": "test_atomic_memory_order",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/language/test_tilelang_language_atomic.py",
+      "test_filter": "test_atomic_or_codegen",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/language/test_tilelang_language_ceildiv.py",
+      "test_filter": "test_align_up_dyn",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/language/test_tilelang_language_ceildiv.py",
+      "test_filter": "test_ceildiv_dyn",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/language/test_tilelang_language_chain_equal.py",
+      "test_filter": "test_chain_equal",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/language/test_tilelang_language_clear.py",
+      "test_filter": "test_fill_int8_negative",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/language/test_tilelang_language_copy.py",
+      "test_filter": "test_tilelang_copy_cross_dtype",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/language/test_tilelang_language_float4_e2m1_unpacked_dtype.py",
+      "test_filter": "test_float4_simt_copy_bans_packed_to_unpacked",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/language/test_tilelang_language_frontend_v2.py",
+      "test_filter": "test_while_loop",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/language/test_tilelang_language_get_warp_info.py",
+      "test_filter": "test_get_lane_idx_custom",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/language/test_tilelang_language_get_warp_info.py",
+      "test_filter": "test_get_lane_idx_default",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/language/test_tilelang_language_get_warp_info.py",
+      "test_filter": "test_get_warp_group_idx_custom",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/language/test_tilelang_language_get_warp_info.py",
+      "test_filter": "test_get_warp_group_idx_default",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/language/test_tilelang_language_get_warp_info.py",
+      "test_filter": "test_get_warp_idx_custom",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/language/test_tilelang_language_get_warp_info.py",
+      "test_filter": "test_get_warp_idx_default",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/language/test_tilelang_language_get_warp_info.py",
+      "test_filter": "test_get_warp_idx_sync_custom",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/language/test_tilelang_language_get_warp_info.py",
+      "test_filter": "test_get_warp_idx_sync_default",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/language/test_tilelang_language_if_range.py",
+      "test_filter": "test_tilelang_if_range",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/language/test_tilelang_language_infinity.py",
+      "test_filter": "test_infinity",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/language/test_tilelang_language_intrinsics_codegen.py",
+      "test_filter": "test_language_ldg_codegen",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/language/test_tilelang_language_isfinite_codegen.py",
+      "test_filter": "test_isfinite_codegen_uses_cuda_intrinsic",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/language/test_tilelang_language_ldg.py",
+      "test_filter": "test_ldg128_codegen",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/language/test_tilelang_language_ldg.py",
+      "test_filter": "test_ldg128_predicated_codegen",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/language/test_tilelang_language_ldg.py",
+      "test_filter": "test_ldg32_codegen",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/language/test_tilelang_language_ldg.py",
+      "test_filter": "test_ldg32_predicated_codegen",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/language/test_tilelang_language_ldg.py",
+      "test_filter": "test_ldg64_codegen",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/language/test_tilelang_language_ldg.py",
+      "test_filter": "test_ldg64_predicated_codegen",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/language/test_tilelang_language_ldst.py",
+      "test_filter": "test_lds_sts128_codegen",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/language/test_tilelang_language_ldst.py",
+      "test_filter": "test_lds_sts32_codegen",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/language/test_tilelang_language_ldst.py",
+      "test_filter": "test_lds_sts64_codegen",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/language/test_tilelang_language_ldst.py",
+      "test_filter": "test_stg128_codegen",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/language/test_tilelang_language_ldst.py",
+      "test_filter": "test_stg128_predicated_codegen",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/language/test_tilelang_language_ldst.py",
+      "test_filter": "test_stg32_codegen",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/language/test_tilelang_language_ldst.py",
+      "test_filter": "test_stg32_predicated_codegen",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/language/test_tilelang_language_ldst.py",
+      "test_filter": "test_stg64_codegen",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/language/test_tilelang_language_ldst.py",
+      "test_filter": "test_stg64_predicated_codegen",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/language/test_tilelang_language_let.py",
+      "test_filter": "test_bind_kernel",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/language/test_tilelang_language_let.py",
+      "test_filter": "test_let_vectorize_load",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/language/test_tilelang_language_let_layout.py",
+      "test_filter": "test_blocksparse_copy_cp_async",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/language/test_tilelang_language_let_layout.py",
+      "test_filter": "test_blocksparse_copy_tma",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/language/test_tilelang_language_min_blocks_per_sm.py",
+      "test_filter": "test_annotate_min_blocks_per_sm_launch_bounds",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/language/test_tilelang_language_ptr.py",
+      "test_filter": "test_pointer_table_grouped_matmul",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/language/test_tilelang_language_reduce.py",
+      "test_filter": "test_reduce_absmax_bf16_noncontiguous_packed_layout_regression",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/language/test_tilelang_language_reduce.py",
+      "test_filter": "test_reduce_packed_absmax_nan_propagate_uses_nan_intrinsics",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/language/test_tilelang_language_reduce.py",
+      "test_filter": "test_reduce_packed_max_nan_batch_runtime",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/language/test_tilelang_language_reduce.py",
+      "test_filter": "test_reduce_packed_max_nan_propagate_runtime",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/language/test_tilelang_language_reduce.py",
+      "test_filter": "test_reduce_packed_max_nan_propagate_uses_nan_intrinsics",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/language/test_tilelang_language_reduce.py",
+      "test_filter": "test_reduce_packed_min_nan_propagate_runtime",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/language/test_tilelang_language_reduce.py",
+      "test_filter": "test_reduce_packed_min_nan_propagate_uses_nan_intrinsics",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/language/test_tilelang_language_reduce_maxmin_nan.py",
+      "test_filter": "test_reduce_absmax_nan_propagate_uses_nan_op",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/language/test_tilelang_language_reduce_maxmin_nan.py",
+      "test_filter": "test_reduce_max_default_uses_plain_op",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/language/test_tilelang_language_reduce_maxmin_nan.py",
+      "test_filter": "test_reduce_max_nan_propagate_uses_nan_op",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/language/test_tilelang_language_reduce_maxmin_nan.py",
+      "test_filter": "test_reduce_max_runtime_nan_behavior",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/language/test_tilelang_language_reduce_maxmin_nan.py",
+      "test_filter": "test_reduce_min_nan_propagate_uses_nan_op",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/language/test_tilelang_language_reduce_maxmin_nan.py",
+      "test_filter": "test_reduce_min_runtime_nan_behavior",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/language/test_tilelang_language_source_kernel.py",
+      "test_filter": "test_source_kernel_inline_codegen",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/language/test_tilelang_language_source_kernel.py",
+      "test_filter": "test_source_kernel_invalid_entry_name_fails_in_lower",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/language/test_tilelang_language_source_kernel.py",
+      "test_filter": "test_source_kernel_loads_from_file",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/language/test_tilelang_language_source_kernel.py",
+      "test_filter": "test_source_kernel_run",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/language/test_tilelang_language_subtype.py",
+      "test_filter": "test_subtype_basic_shape_binding",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/language/test_tilelang_language_subtype.py",
+      "test_filter": "test_subtype_complex_expressions",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/language/test_tilelang_language_subtype.py",
+      "test_filter": "test_subtype_complex_expressions_various",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/language/test_tilelang_language_subtype.py",
+      "test_filter": "test_subtype_different_m_values",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/language/test_tilelang_language_subtype.py",
+      "test_filter": "test_subtype_different_strides",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/language/test_tilelang_language_subtype.py",
+      "test_filter": "test_subtype_fp4_dynamic_stride_store",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/language/test_tilelang_language_subtype.py",
+      "test_filter": "test_subtype_fp4_scalar_store_codegen",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/language/test_tilelang_language_subtype.py",
+      "test_filter": "test_subtype_noncontiguous_tensor",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/language/test_tilelang_language_subtype.py",
+      "test_filter": "test_subtype_shared_symbolic",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/language/test_tilelang_language_subtype.py",
+      "test_filter": "test_subtype_shared_symbolic_strided",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/language/test_tilelang_language_subtype.py",
+      "test_filter": "test_subtype_shared_symbolic_strided_noncontig",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/language/test_tilelang_language_subtype.py",
+      "test_filter": "test_subtype_stride_binding",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/language/test_tilelang_language_subtype.py",
+      "test_filter": "test_subtype_symbolic_last_dim",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/language/test_tilelang_language_subtype.py",
+      "test_filter": "test_subtype_symbolic_last_dim_strided",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/language/test_tilelang_language_subtype.py",
+      "test_filter": "test_subtype_symbolic_last_dim_various_sizes",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/language/test_tilelang_language_sync_threads.py",
+      "test_filter": "test_sync_threads_with_computed_barrier_id",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/language/test_tilelang_language_sync_threads.py",
+      "test_filter": "test_sync_threads_with_variable_barrier_id",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/language/test_tilelang_language_transpose.py",
+      "test_filter": "test_tilelang_transpose",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/language/test_tilelang_language_transpose.py",
+      "test_filter": "test_tilelang_transpose_square",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/language/test_tilelang_language_unroll.py",
+      "test_filter": "test_unroll_with_unroll_factor",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/language/test_tilelang_language_var_init.py",
+      "test_filter": "test_var_assign",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/language/test_tilelang_language_vectorize.py",
+      "test_filter": "test_vectorize_all_dtypes",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/language/test_tilelang_language_vectorize.py",
+      "test_filter": "test_vectorize_broadcast_int8",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/language/test_tilelang_language_vectorized_cast.py",
+      "test_filter": "test_vectorized_cast",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/language/test_tilelang_language_view.py",
+      "test_filter": "test_annotated_layout_on_dtype_changing_view_compile",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/language/test_tilelang_language_warp_sync.py",
+      "test_filter": "test_shfl_sync",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/language/test_tilelang_language_warp_sync.py",
+      "test_filter": "test_warp_sync",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/language/test_tilelang_language_warp_vote.py",
+      "test_filter": "test_activemask",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/language/test_tilelang_language_warp_vote.py",
+      "test_filter": "test_all_sync",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/language/test_tilelang_language_warp_vote.py",
+      "test_filter": "test_any_sync",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/language/test_tilelang_language_warp_vote.py",
+      "test_filter": "test_ballot",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/language/test_tilelang_language_warp_vote.py",
+      "test_filter": "test_ballot_sync",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/language/test_tilelang_language_warp_vote.py",
+      "test_filter": "test_ffs_ballot_sync",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/language/test_tilelang_language_warp_vote.py",
+      "test_filter": "test_match_all_sync",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/language/test_tilelang_language_warp_vote.py",
+      "test_filter": "test_match_any_sync",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/language/test_tilelang_language_warp_vote.py",
+      "test_filter": "test_syncthreads_and",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/language/test_tilelang_language_warp_vote.py",
+      "test_filter": "test_syncthreads_count",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/language/test_tilelang_language_warp_vote.py",
+      "test_filter": "test_syncthreads_or",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/layout/test_tilelang_annotate_loop_layout.py",
+      "test_filter": "test_copy_loop_layout_annotated_replicate_vec4",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/layout/test_tilelang_annotate_loop_layout.py",
+      "test_filter": "test_loop_layout_fragment_vec4",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/layout/test_tilelang_annotate_loop_layout.py",
+      "test_filter": "test_loop_layout_identity",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/layout/test_tilelang_layout_inference.py",
+      "test_filter": "test_copy_readback_from_fully_replicated_fragment_uses_rep_guard",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/layout/test_tilelang_layout_inference.py",
+      "test_filter": "test_parallel_readback_from_fully_replicated_fragment_uses_rep_guard",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/math/test_math_bitwise_reduce.py",
+      "test_filter": "test_bitwise_reduce_ops",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/math/test_math_fast_math.py",
+      "test_filter": "test_abs_maps_to_fabs",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/math/test_math_fast_math.py",
+      "test_filter": "test_fast_rcp_codegen_uses_approx_rcp",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/math/test_math_fast_math.py",
+      "test_filter": "test_fastmath_versions",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/math/test_math_fast_math.py",
+      "test_filter": "test_mathops_generate_no_fastmath",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/math/test_math_fast_math.py",
+      "test_filter": "test_round_modes",
+      "boards": [
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/math/test_math_fast_math.py",
+      "test_filter": "test_round_modes[ties-away-from-zero]",
+      "boards": [
+        "ZW-M890P"
+      ]
+    },
+    {
+      "file_path": "testing/python/math/test_math_fast_math.py",
+      "test_filter": "test_two_arg_mathops_fastmath",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/math/test_math_ieee_math.py",
+      "test_filter": "test_ieee_add_all_rounding_modes",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/math/test_math_ieee_math.py",
+      "test_filter": "test_ieee_fdiv_all_rounding_modes",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/math/test_math_ieee_math.py",
+      "test_filter": "test_ieee_fmaf_all_rounding_modes",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/math/test_math_ieee_math.py",
+      "test_filter": "test_ieee_frcp_all_rounding_modes",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/math/test_math_ieee_math.py",
+      "test_filter": "test_ieee_frsqrt_rn_only",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/math/test_math_ieee_math.py",
+      "test_filter": "test_ieee_fsqrt_all_rounding_modes",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/math/test_math_ieee_math.py",
+      "test_filter": "test_ieee_mul_all_rounding_modes",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/math/test_math_ieee_math.py",
+      "test_filter": "test_ieee_sub_all_rounding_modes",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/profiler/test_bench_cupti.py",
+      "test_filter": "test_cupti_counts_torch_zeros_kernel_time",
+      "boards": [
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/profiler/test_bench_cupti.py",
+      "test_filter": "test_cupti_empty_function_excludes_cache_flush_time",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/tilelibrary/test_tilelang_tilelibrary_gemm_sp.py",
+      "test_filter": "test_compress_dtype_combinations",
+      "boards": [
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/tilelibrary/test_tilelang_tilelibrary_gemm_sp.py",
+      "test_filter": "test_gemm_rr",
+      "boards": [
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/tilelibrary/test_tilelang_tilelibrary_gemm_sp.py",
+      "test_filter": "test_gemm_rs",
+      "boards": [
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/tilelibrary/test_tilelang_tilelibrary_gemm_sp.py",
+      "test_filter": "test_gemm_sr",
+      "boards": [
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/tilelibrary/test_tilelang_tilelibrary_gemm_sp.py",
+      "test_filter": "test_gemm_ss",
+      "boards": [
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/transform/test_tilelang_transform_decouple_type_cast.py",
+      "test_filter": "test_codegen_fp8_local_to_memory",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/transform/test_tilelang_transform_decouple_type_cast.py",
+      "test_filter": "test_codegen_local_to_memory",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/transform/test_tilelang_transform_decouple_type_cast.py",
+      "test_filter": "test_codegen_memory_to_local",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/transform/test_tilelang_transform_decouple_type_cast.py",
+      "test_filter": "test_codegen_no_cast_buffer_same_dtype",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/transform/test_tilelang_transform_disable_memory_reuse.py",
+      "test_filter": "test_disable_reuse_data_integrity",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/transform/test_tilelang_transform_disable_memory_reuse.py",
+      "test_filter": "test_disable_reuse_no_overlap",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/transform/test_tilelang_transform_hoist_broadcast_values.py",
+      "test_filter": "test_hoist_broadcast",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/transform/test_tilelang_transform_layout_inference.py",
+      "test_filter": "test_column_broadcast_fragment_values",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/transform/test_tilelang_transform_lexical_alloc_scope.py",
+      "test_filter": "test_codegen_emits_braces",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/transform/test_tilelang_transform_lexical_alloc_scope.py",
+      "test_filter": "test_codegen_skips_redundant_top_level_braces",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/transform/test_tilelang_transform_lower_ldgstg.py",
+      "test_filter": "test_e2e_load_global_store_global",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/transform/test_tilelang_transform_lower_ldgstg.py",
+      "test_filter": "test_e2e_load_global_store_global_predicated",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/transform/test_tilelang_transform_split_host_device.py",
+      "test_filter": "test_split_host_device_multiple_assumes",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/transform/test_tilelang_transform_split_host_device.py",
+      "test_filter": "test_split_host_device_no_dangling_vars",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/transform/test_tilelang_transform_split_host_device.py",
+      "test_filter": "test_split_host_device_with_buffer_shape_assume",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/transform/test_tilelang_transform_split_host_device.py",
+      "test_filter": "test_split_host_device_with_user_assume",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/transform/test_tilelang_transform_thread_sync.py",
+      "test_filter": "test_loop_carry_different_indices",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/transform/test_tilelang_transform_thread_sync.py",
+      "test_filter": "test_loop_carry_modulo_buffering",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/transform/test_tilelang_transform_thread_sync.py",
+      "test_filter": "test_loop_carry_no_dependency_same_index",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/transform/test_tilelang_transform_thread_sync.py",
+      "test_filter": "test_loop_carry_with_cross_thread_dependency",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/transform/test_tilelang_transform_thread_sync.py",
+      "test_filter": "test_no_sync_between_atomic_adds_to_shared",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/transform/test_tilelang_transform_thread_sync.py",
+      "test_filter": "test_no_sync_needed_uniform_accesses",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/transform/test_tilelang_transform_thread_sync.py",
+      "test_filter": "test_sync_hoist_nested_non_uniform_if",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/transform/test_tilelang_transform_thread_sync.py",
+      "test_filter": "test_sync_hoist_non_uniform_if_in_loop",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/transform/test_tilelang_transform_thread_sync.py",
+      "test_filter": "test_sync_hoist_non_uniform_if_in_loop_with_shared_memory",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/transform/test_tilelang_transform_thread_sync.py",
+      "test_filter": "test_sync_hoist_non_uniform_if_shared_memory_condition",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/transform/test_tilelang_transform_thread_sync.py",
+      "test_filter": "test_sync_hoist_non_uniform_if_with_threadidx",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/transform/test_tilelang_transform_thread_sync.py",
+      "test_filter": "test_sync_if_with_same_index",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/transform/test_tilelang_transform_thread_sync.py",
+      "test_filter": "test_sync_if_with_same_index_with_modulo_if",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/transform/test_tilelang_transform_thread_sync.py",
+      "test_filter": "test_sync_inside_uniform_if_blockidx",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/transform/test_tilelang_transform_thread_sync.py",
+      "test_filter": "test_sync_inside_uniform_if_runtime_block_uniform_condition",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/transform/test_tilelang_transform_thread_sync.py",
+      "test_filter": "test_sync_read_thread_id_independent_location",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/transform/test_tilelang_transform_thread_sync.py",
+      "test_filter": "test_sync_shared",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/transform/test_tilelang_transform_thread_sync.py",
+      "test_filter": "test_sync_shared_dyn_stmatrix_loop_hoist",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/transform/test_tilelang_transform_thread_sync.py",
+      "test_filter": "test_thread_sync_handles_int64_tvm_access_ptr_offset",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/transform/test_tilelang_transform_thread_sync.py",
+      "test_filter": "test_thread_sync_shared_dyn_alias_different_element_sizes",
+      "boards": [
+        "ZW-M890P",
+        "OAM-810E"
+      ]
+    },
+    {
+      "file_path": "testing/python/utils/test_compress_utils.py",
+      "test_filter": "test_compress",
+      "boards": [
+        "OAM-810E"
+      ]
+    }
+  ]
+}

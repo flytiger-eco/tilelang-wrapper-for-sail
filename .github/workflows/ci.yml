@@ -363,6 +363,16 @@ jobs:
             " "$WRAPPER_SKIP" "$TILELANG_ROOT/.github/scripts/test_tilelang.py" "$TILELANG_ROOT/${CI_TEST_PLATFORM}_skip.json" "$CI_TEST_PLATFORM" \
               || { echo "FATAL: unified CI script wrapper skip merge failed"; exit 1; }
 
+            # ---- Apply CI focus allowlist (optional, fail-closed, boards-filtered) ----
+            # Keeps only the wrapper-capability test set. Delete wrapper_ci_focus.json
+            # to go back to the full scope; boards not listed there run full scope.
+            FOCUS_CONFIG="$WRAPPER_ROOT/.github/scripts/wrapper_ci_focus.json"
+            if [[ -f "$FOCUS_CONFIG" ]]; then
+              python3 "$WRAPPER_ROOT/.github/scripts/apply_ci_focus.py" \
+                "$FOCUS_CONFIG" "$TILELANG_ROOT/.github/scripts/test_tilelang.py" "$BOARD_TYPE" \
+                || { echo "FATAL: CI focus allowlist application failed"; exit 1; }
+            fi
+
             # ---- Run tests ----
             cd "$TILELANG_ROOT"
             python .github/scripts/test_tilelang.py -o test_result.xml -v --timeout 600 --workers 4 || TEST_RC=$?
