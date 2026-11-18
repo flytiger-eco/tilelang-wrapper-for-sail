@@ -1,5 +1,5 @@
 {
-  "description": "wrapper CI focus allowlist (unified, per-case boards): keep only the wrapper-capability test set (B-class, pinned 81823f36 A/B measured on both boards: native skipped -> wrapped passed). ZW-M890P: 268 entries -> 429 items; OAM-810E: 255 entries -> 474 items; 238 entries are B-class on both boards (418-item intersection). Each case declares its own boards so a capability measured on one board never changes the other board's scope. Regenerate with scripts/skip_list/gen_ci_focus_unified.py when TILELANG_REF changes; a stale allowlist shows up as 'ci-focus allowlist: kept 0 of N' in CI logs.",
+  "description": "wrapper CI focus allowlist (unified, per-case boards): keep only the wrapper-capability test set (B-class, pinned 81823f36 A/B measured on both boards: native skipped -> wrapped passed). ZW-M890P: 268 entries -> 429 items; OAM-810E: 255 entries -> 474 items; 238 entries are B-class on both boards (418-item intersection). Each case declares its own boards so a capability measured on one board never changes the other board's scope. Regenerate with scripts/skip_list/gen_ci_focus_unified.py when TILELANG_REF changes; a stale allowlist fails CI closed via the aggregate zero-match guard ('kept 0 of N' across all directory groups).",
   "boards": [
     "ZW-M890P",
     "OAM-810E"

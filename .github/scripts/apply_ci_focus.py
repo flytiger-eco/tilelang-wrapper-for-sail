@@ -25,6 +25,15 @@ this script exits 0 WITHOUT patching (that board runs the full scope, unchanged)
 If the focus file is absent, ci.yml does not call this script at all (full scope).
 Delete the file (or regenerate it when TILELANG_REF changes) to disable/refresh.
 
+Fail-closed guard: the injected filter accumulates kept/seen counts across all
+directory groups, and an injected aggregate check (called right after the scan
+loop, before the runner's "if not test_configs:" warning) fails the run when
+the allowlist matched none of the collected tests (seen > 0, kept == 0). A
+schema-valid but stale allowlist after a TILELANG_REF bump must not pass CI
+with zero coverage. Individual directory groups may legitimately keep 0 tests
+(the allowlist does not cover every group); only the aggregate zero-match is
+fatal. Every filter call also logs its kept/seen counts unconditionally.
+
 Usage:
     apply_ci_focus.py <focus.json> <runner.py> <platform>
 """
@@ -43,17 +52,21 @@ REQUIRED_KEYS = frozenset({"file_path", "test_filter", "boards"})
 MARKER_FILTER = ("filtered = [t for t in collected "
                 "if (t.file_path, t.test_filter) not in skip_set]")
 MARKER_LOAD_SKIP = "def load_skip():"
+MARKER_AGGREGATE = "    if not test_configs:"
 
 FOCUS_FUNC = '''
 
 _WRAPPER_CI_FOCUS_PATH = %r
 _WRAPPER_CI_FOCUS_BOARD = %r
+_WRAPPER_CI_FOCUS_SEEN = 0
+_WRAPPER_CI_FOCUS_KEPT = 0
 
 
 def _wrapper_ci_focus_filter(tests):
     """Keep only allowlisted tests (injected by wrapper CI, see apply_ci_focus.py)."""
     import json as _json
 
+    global _WRAPPER_CI_FOCUS_SEEN, _WRAPPER_CI_FOCUS_KEPT
     with open(_WRAPPER_CI_FOCUS_PATH, encoding="utf-8") as _f:
         _doc = _json.load(_f)
     _cases = [c for c in _doc["cases"] if _WRAPPER_CI_FOCUS_BOARD in c["boards"]]
@@ -69,10 +82,36 @@ def _wrapper_ci_focus_filter(tests):
             _out.append(_t)
         elif "[" in _node and _node.split("[", 1)[0] in _funcs.get(_fp, set()):
             _out.append(_t)
-    if _out:
-        print("ci-focus allowlist: kept %%d of %%d tests in this directory"
-              %% (len(_out), len(tests)))
+    print("ci-focus allowlist: kept %%d of %%d tests in this directory"
+          %% (len(_out), len(tests)))
+    _WRAPPER_CI_FOCUS_SEEN += len(tests)
+    _WRAPPER_CI_FOCUS_KEPT += len(_out)
     return _out
+
+
+def _wrapper_ci_focus_check_aggregate():
+    """Fail closed when the allowlist matched none of the collected tests.
+
+    A single directory group keeping 0 tests is legitimate (the allowlist does
+    not cover every group); a zero match across ALL groups means the allowlist
+    is stale for this board/TILELANG_REF and the run would otherwise pass CI
+    with zero coverage.
+    """
+    import sys as _sys
+
+    if _WRAPPER_CI_FOCUS_SEEN and not _WRAPPER_CI_FOCUS_KEPT:
+        print(
+            "FATAL: ci-focus allowlist matched 0 of %%d collected tests on board "
+            "%%r - the allowlist is stale for this TILELANG_REF. Regenerate it "
+            "with gen_ci_focus_unified.py, or delete wrapper_ci_focus.json to "
+            "run the full scope."
+            %% (_WRAPPER_CI_FOCUS_SEEN, _WRAPPER_CI_FOCUS_BOARD),
+            file=_sys.stderr,
+        )
+        _sys.exit(1)
+    print("ci-focus allowlist aggregate: kept %%d of %%d collected tests across "
+          "all directory groups"
+          %% (_WRAPPER_CI_FOCUS_KEPT, _WRAPPER_CI_FOCUS_SEEN))
 
 '''
 
@@ -159,6 +198,10 @@ def patch_runner(runner_path, focus_path, platform):
     if src.count(MARKER_LOAD_SKIP) != 1:
         fatal(f"expected exactly one {MARKER_LOAD_SKIP!r} in {runner_path}, "
               f"found {src.count(MARKER_LOAD_SKIP)}")
+    if src.count(MARKER_AGGREGATE) != 1:
+        fatal(f"expected exactly one aggregate-check anchor "
+              f"{MARKER_AGGREGATE!r} in {runner_path}, "
+              f"found {src.count(MARKER_AGGREGATE)}")
     if "_wrapper_ci_focus_filter" in src:
         fatal(f"{runner_path} already patched – refusing to double-patch")
 
@@ -167,6 +210,11 @@ def patch_runner(runner_path, focus_path, platform):
     new = new.replace(
         MARKER_FILTER,
         MARKER_FILTER + "\n    filtered = _wrapper_ci_focus_filter(filtered)",
+        1,
+    )
+    new = new.replace(
+        MARKER_AGGREGATE,
+        "    _wrapper_ci_focus_check_aggregate()\n" + MARKER_AGGREGATE,
         1,
     )
     try:
