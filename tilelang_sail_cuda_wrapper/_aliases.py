@@ -120,9 +120,24 @@ _UNSUPPORTED = {
     # tilelang.intrinsics facade can still load.
     "intrinsics": {
         "TensorCoreIntrinEmitterWithLadderTransform": "ladder-transform layout plugin for MMA macros",
+        "TensorCoreIntrinEmitterSM120": "SM120 block-scale MMA emitter",
     },
     "intrinsics.macro": {
         "TensorCoreIntrinEmitterWithLadderTransform": "ladder-transform layout plugin for MMA macros",
+        "TensorCoreIntrinEmitterSM120": "SM120 block-scale MMA emitter",
+    },
+    # tilelang >= 0.1.15 added three SM120 block-scale ldmatrix layouts to
+    # the cuda mma_layout only; the ppu mma_layout never grew them.  The
+    # native mma_sm120_macro_generator module (served natively, like
+    # wgmma/tcgen05) from-imports these names through the alias package,
+    # so without stubs its import dies on an obscure "cannot import name"
+    # error.  With stubs the module imports (its layouts are referenced
+    # only inside method bodies) and the explicit error fires when an
+    # SM120-specific method actually runs.
+    "intrinsics.layout.mma_layout": {
+        "ldmatrix_32x16_to_shared_8x64_layout_b": "SM120 block-scale ldmatrix layout",
+        "ldmatrix_32x32_to_shared_16x64_layout_a": "SM120 block-scale ldmatrix layout",
+        "ldmatrix_32x32_to_shared_16x64_layout_b": "SM120 block-scale ldmatrix layout",
     },
     "intrinsics.macro.mma_macro_generator": {
         "TensorCoreIntrinEmitterWithLadderTransform": "ladder-transform layout plugin for MMA macros",
@@ -171,18 +186,34 @@ def _native_cuda_dir(rel: str):
 def _make_cuda_target_alias(fullname: str, spec=None) -> types.ModuleType:
     """Create the ``tilelang.cuda.target`` alias, portable across tilelang versions.
 
-    tilelang moved the target helpers across versions: >= 0.1.12 keeps them
-    in ``tilelang.ppu.target``, <= 0.1.11 flat in ``tilelang.utils.target``.
-    Pick whichever backend module exists and forward CUDA-style names onto
-    it.  Generation/feature predicates (target_is_hopper, ... ) have no
+    tilelang moved the target helpers across versions (see ``_versions``):
+    the "modern" layout (>= 0.1.12) keeps them in ``tilelang.ppu.target``,
+    the "legacy" one (<= 0.1.11) flat in ``tilelang.utils.target``.  The
+    layout decides which backend module to forward CUDA-style names onto;
+    an ImportError on the layout's pick falls back to the other one (the
+    capability-probe order the wrapper used before the layout table).
+    Generation/feature predicates (target_is_hopper, ...) have no
     ppu-side python wrapper on any version; they go straight to the tilelang
     FFI (the exact calls the native cuda module would make).
     """
-    try:
-        base = importlib.import_module("tilelang.ppu.target")  # >= 0.1.12
-        name_map = dict(_ALIASES["target"])
-    except ImportError:
-        base = importlib.import_module("tilelang.utils.target")  # <= 0.1.11
+    from ._versions import detect_layout, layout_target_modules
+
+    layout = detect_layout()
+    ppu_target_modname, legacy_target_modname = layout_target_modules(layout)
+    base = None
+    if ppu_target_modname is not None:
+        try:
+            base = importlib.import_module(ppu_target_modname)  # modern
+            name_map = dict(_ALIASES["target"])
+        except ImportError:
+            base = None
+    if base is None:
+        if legacy_target_modname is None:
+            raise ImportError(
+                "tilelang-sail-cuda-wrapper: no tilelang target module found "
+                f"for the detected layout {layout!r}"
+            )
+        base = importlib.import_module(legacy_target_modname)  # legacy
         name_map = dict(_LEGACY_TARGET_ALIASES)
 
     alias = types.ModuleType(fullname)

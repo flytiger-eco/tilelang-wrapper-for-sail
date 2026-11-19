@@ -13,9 +13,15 @@ The implementation is split by responsibility:
   and strict validation of user-facing targets.
 * ``_testing``   -- widens tilelang.testing's CUDA test gates so
   CUDA-styled tests run (instead of skipping) on the PPU.
+* ``_execution`` -- execution-backend forwarding: an "nvrtc" request
+  resolved against the ppu backend becomes its PPU counterpart
+  "hgrtc" (only on tilelang releases that ship an hgrtc spec).
 * ``_passes``    -- routing of common transform passes to PPU-specific ones.
 * ``_tvm_ownership`` -- whether a loaded ``tvm`` is tilelang's vendored
   copy (only that one may be patched).
+* ``_versions``  -- tilelang version/layout detection (``legacy``
+  ``<= 0.1.11`` vs ``modern`` ``>= 0.1.12``, both capability-probed with
+  the version table as advisory); consulted where the layouts fork.
 
 This module wires them together: ``find_spec`` answers import requests,
 ``_WrapperLoader`` applies a post-load patch, and ``install`` registers
@@ -31,6 +37,7 @@ import importlib.util
 import sys
 
 from ._aliases import _make_cuda_alias
+from ._execution import _patch_tilelang_backend_module
 from ._passes import _patch_tilelang_transform
 from ._targets import (
     _patch_tvm_target,
@@ -54,11 +61,16 @@ _FINDER = None  # singleton, guarded by install()
 # tilelang.testing is separate: it loads when user tests import it (not as
 # part of ``import tilelang``), and its patch must run before those tests
 # use the requires_cuda gate.
+# tilelang.backend.module is separate in the same way: it exists from 0.1.15
+# on and its patch (execution-backend forwarding) must run before any
+# BackendModule resolves an execution backend; on releases that predate
+# the module the entry is simply never loaded.
 _WRAP_LOAD_MODULES = {
     "tvm.target": _patch_tvm_target,
     "tilelang.transform": _patch_tilelang_transform,
     "tilelang.utils.target": _patch_tilelang_utils_target,
     "tilelang.backend.target": _patch_tilelang_backend_target,
+    "tilelang.backend.module": _patch_tilelang_backend_module,
     "tilelang.testing": _patch_tilelang_testing,
 }
 
