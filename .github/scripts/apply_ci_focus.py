@@ -105,13 +105,16 @@ def _wrapper_ci_focus_check_aggregate():
     if not _WRAPPER_CI_FOCUS_KEPT:
         if _WRAPPER_CI_FOCUS_SEEN:
             _why = ("the allowlist is stale for this TILELANG_REF - regenerate "
-                    "it with gen_ci_focus_unified.py")
+                    "it with gen_ci_focus_unified.py, or delete "
+                    "wrapper_ci_focus.json to run the full scope")
         else:
             _why = ("no tests survived collection and the board skip filters "
-                    "before the allowlist ran")
+                    "before the allowlist ran - investigate the checkout and "
+                    "the board/skip lists; deleting wrapper_ci_focus.json will "
+                    "NOT fix this and only disables the guard")
         print(
             "FATAL: ci-focus allowlist kept 0 of %%d collected tests on board "
-            "%%r - %%s. Delete wrapper_ci_focus.json to run the full scope."
+            "%%r - %%s."
             %% (_WRAPPER_CI_FOCUS_SEEN, _WRAPPER_CI_FOCUS_BOARD, _why),
             file=_sys.stderr,
         )
@@ -183,6 +186,11 @@ def validate(focus_path):
             fatal(f"cases[{i}].file_path must be relative, got {fp!r}")
         if ".." in fp.split("/"):
             fatal(f"cases[{i}].file_path contains parent-directory traversal: {fp!r}")
+        if fpn != fp:
+            fatal(f"cases[{i}].file_path must be normalized - got {fp!r}, "
+                  f"expected {fpn!r}: the injected filter matches raw strings "
+                  f"against the runner's normalized file_path, so a "
+                  f"non-normalized entry would pass validation but never match")
         key = (fpn, tf)
         if key in seen:
             fatal(f"cases[{i}] duplicate after normalization: {fp!r} :: {tf!r}")
@@ -232,7 +240,7 @@ def patch_runner(runner_path, focus_path, platform):
     tmp = None
     try:
         with tempfile.NamedTemporaryFile(
-                mode="w", delete=False,
+                mode="w", delete=False, encoding="utf-8",
                 dir=os.path.dirname(runner_path) or ".", suffix=".tmp") as t:
             tmp = t.name
             t.write(new)
