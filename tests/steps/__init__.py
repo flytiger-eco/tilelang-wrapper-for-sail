@@ -35,10 +35,12 @@ from __future__ import annotations
 import importlib
 
 # Ordered: split surfaces first (facade_intrinsics covers both sides of
-# the 0.1.15 facade removal and thus always applies), then per-release
-# modules in release order.
+# the 0.1.15 facade removal; nvrtc_hgrtc covers both sides of the
+# execution-backend split and always applies from 0.1.15 on), then
+# per-release modules in release order.
 _STEP_MODULES = (
     "facade_intrinsics",
+    "nvrtc_hgrtc",
     "v0_1_11",
     "v0_1_12",
     "v0_1_15",

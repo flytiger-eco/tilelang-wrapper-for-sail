@@ -19,7 +19,11 @@ Three of them:
   dialect names fail loudly (AttributeError names the alias module --
   they are not stubbed: nothing re-exports them into a facade that must
   load, and stubbing ~60 language names would be a maintenance surface
-  out of proportion to the confusion saved).
+  out of proportion to the confusion saved).  "CUDA-only" here means
+  "absent from the ppu dialect": upstream shares the ldg/stg family
+  through ``tilelang.language.builtin`` across both dialects, so those
+  names forward like common names -- the check probes the ppu dialect
+  itself instead of assuming a frozen name list.
 
 Each block is individually gated by what the running tilelang actually
 ships (find_spec), mirroring the wrapper's own probe-first selection: on
@@ -93,21 +97,55 @@ def run(ctx):
             "tilelang.cuda.language is not the alias of the ppu dialect"
         assert lang.Tensor is plang.Tensor, \
             "dialect common names do not forward to the ppu dialect"
-        import tilelang.cuda.language.tir as ltir
-        assert "cuda/language/tir" in ltir.__file__, \
-            "dialect tir submodule unexpectedly aliased"
-        assert hasattr(ltir, "ptx_ldmatrix"), "native dialect tir lost ptx helpers"
+        # The dialect tir submodule follows the general forwarding rule:
+        # aliased when the ppu dialect ships its own tir (tilelang commit
+        # 02c59bac added tilelang.ppu.language.tir), native when it does not
+        # (the 9a8dece0-era layout the step was first written against).
+        if importlib.util.find_spec("tilelang.ppu.language.tir") is not None:
+            import tilelang.ppu.language.tir as ptir
+            import tilelang.cuda.language.tir as ltir
+            # The alias is a distinct synthetic ModuleType, so object identity
+            # never holds against the real ppu module; the marker attribute
+            # the wrapper plants on every alias is the identity witness.
+            assert getattr(
+                ltir, "_tilelang_sail_cuda_wrapper_alias_of__", None
+            ) is ptir, (
+                "dialect tir not aliased despite tilelang.ppu.language.tir existing"
+            )
+            assert hasattr(ltir, "ptx_ldmatrix"), "ppu dialect tir lost ptx helpers"
+            report("dialect tir aliases the ppu tir (ppu-side tir present)")
+        else:
+            import tilelang.cuda.language.tir as ltir
+            assert "cuda/language/tir" in ltir.__file__, \
+                "dialect tir submodule unexpectedly aliased"
+            assert hasattr(ltir, "ptx_ldmatrix"), "native dialect tir lost ptx helpers"
+            report("dialect tir loads natively (ppu-side tir absent)")
         assert getattr(plang, "ptx_mma", None) is not None, \
             "ppu dialect lost its own cuda.language.tir dependency resolution"
-        for cuda_only in ("mbarrier_arrive", "alloc_tmem", "ldg128",
-                          "create_tma_descriptor"):
+        # CUDA-only names must fail loudly through the alias -- but the
+        # witness is what the ppu dialect itself exports, not a frozen list:
+        # upstream moved the ldg/stg family into the shared
+        # tilelang.language.builtin layer and both dialects re-export it
+        # now, so those names forward like any common name instead of
+        # erroring. A name the ppu dialect ships must resolve through the
+        # alias to the very same object; a name it does not must fail
+        # loudly (AttributeError, not silent stubbing).
+        for dialect_name in ("mbarrier_arrive", "alloc_tmem", "ldg128",
+                             "create_tma_descriptor"):
+            if hasattr(plang, dialect_name):
+                assert getattr(lang, dialect_name) is getattr(
+                    plang, dialect_name
+                ), f"dialect name {dialect_name!r} forwards but not to the" \
+                   " ppu dialect's object"
+                continue
             try:
-                getattr(lang, cuda_only)
-                report(f"FAIL: CUDA-only dialect name '{cuda_only}' unexpectedly usable")
+                getattr(lang, dialect_name)
+                report(f"FAIL: CUDA-only dialect name '{dialect_name}'"
+                       " unexpectedly usable")
                 sys.exit(1)
             except AttributeError:
                 pass
         report("cuda.language dialect OK: aliases ppu dialect, common names"
-               " forward, native tir passthrough, CUDA-only names fail loudly")
+               " forward, ppu-absent names fail loudly")
     else:
         report("language dialects absent on this tilelang: block inert")
